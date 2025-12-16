@@ -1,91 +1,52 @@
-import { ActionPanel, Action, List } from "@raycast/api";
-import { useFetch } from "@raycast/utils";
+import { ActionPanel, Action, List, Icon } from "@raycast/api";
 import { useState } from "react";
-import { URLSearchParams } from "node:url";
+import { useDocumentSearch, type DocumentSearchMatch } from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
-  const { data, isLoading } = useFetch(
-    "https://api.npms.io/v2/search?" +
-      // send the search query to the API
-      new URLSearchParams({ q: searchText.length === 0 ? "@raycast/api" : searchText }),
-    {
-      parseResponse: parseFetchResponse,
-    },
-  );
+  const { results, isLoading, hasQuery } = useDocumentSearch(searchText, { fetchMetadata: true });
 
   return (
     <List
       isLoading={isLoading}
       onSearchTextChange={setSearchText}
-      searchBarPlaceholder="Search npm packages..."
+      searchBarPlaceholder="Search Craft documents..."
       throttle
     >
-      <List.Section title="Results" subtitle={data?.length + ""}>
-        {data?.map((searchResult) => (
-          <SearchListItem key={searchResult.name} searchResult={searchResult} />
+      <List.Section title="Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
+        {results.map((doc) => (
+          <DocumentListItem key={doc.documentId} document={doc} />
         ))}
       </List.Section>
+      {!isLoading && !hasQuery && (
+        <List.EmptyView icon={Icon.MagnifyingGlass} title="Start typing to search documents" />
+      )}
+      {!isLoading && hasQuery && results.length === 0 && (
+        <List.EmptyView icon={Icon.Document} title="No documents found" description="Try a different search term" />
+      )}
     </List>
   );
 }
 
-function SearchListItem({ searchResult }: { searchResult: SearchResult }) {
+function DocumentListItem({ document }: { document: DocumentSearchMatch }) {
+  const lastModified = document.metadata?.lastModifiedAt
+    ? new Date(document.metadata.lastModifiedAt).toLocaleDateString()
+    : undefined;
+
   return (
     <List.Item
-      title={searchResult.name}
-      subtitle={searchResult.description}
-      accessories={[{ text: searchResult.username }]}
+      icon={Icon.Document}
+      title={document.markdown || "Untitled"}
+      subtitle={document.documentId}
+      accessories={lastModified ? [{ text: lastModified, tooltip: "Last modified" }] : []}
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <Action.OpenInBrowser title="Open in Browser" url={searchResult.url} />
-          </ActionPanel.Section>
-          <ActionPanel.Section>
-            <Action.CopyToClipboard
-              title="Copy Install Command"
-              content={`npm install ${searchResult.name}`}
-              shortcut={{ modifiers: ["cmd"], key: "." }}
-            />
+            <Action.OpenInBrowser title="Open in Craft" url={`craftdocs://open?blockId=${document.documentId}`} />
+            <Action.CopyToClipboard title="Copy Document ID" content={document.documentId} />
           </ActionPanel.Section>
         </ActionPanel>
       }
     />
   );
-}
-
-/** Parse the response from the fetch query into something we can display */
-async function parseFetchResponse(response: Response) {
-  const json = (await response.json()) as
-    | {
-        results: {
-          package: {
-            name: string;
-            description?: string;
-            publisher?: { username: string };
-            links: { npm: string };
-          };
-        }[];
-      }
-    | { code: string; message: string };
-
-  if (!response.ok || "message" in json) {
-    throw new Error("message" in json ? json.message : response.statusText);
-  }
-
-  return json.results.map((result) => {
-    return {
-      name: result.package.name,
-      description: result.package.description,
-      username: result.package.publisher?.username,
-      url: result.package.links.npm,
-    } as SearchResult;
-  });
-}
-
-interface SearchResult {
-  name: string;
-  description?: string;
-  username?: string;
-  url: string;
 }

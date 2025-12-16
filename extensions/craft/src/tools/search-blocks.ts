@@ -37,7 +37,7 @@ export default async function (input: Input) {
   const { blockId, pattern, caseSensitive = false, beforeBlockCount = 5, afterBlockCount = 5 } = input;
 
   // Use the API service to search blocks
-  const data = await searchBlocks({
+  const matches = await searchBlocks({
     blockId,
     pattern,
     caseSensitive,
@@ -46,7 +46,7 @@ export default async function (input: Input) {
   });
 
   // Format results for better readability
-  const results = data.matches.map((item, index) => {
+  const results = matches.map((item, index) => {
     const result: {
       index: number;
       content: string;
@@ -89,7 +89,6 @@ export default async function (input: Input) {
 
 export const confirmation: Tool.Confirmation<Input> = async (input) => {
   return {
-    title: "Search Blocks",
     message: `Search for "${input.pattern}" in block ${input.blockId}?`,
   };
 };
