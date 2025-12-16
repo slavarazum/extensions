@@ -22,6 +22,12 @@
       "mode": "view"
     },
     {
+      "name": "search-blocks",
+      "title": "Search Blocks",
+      "description": "Search content within blocks across documents or in a specific document",
+      "mode": "view"
+    },
+    {
       "name": "get-blocks",
       "title": "Get Blocks",
       "description": "",
@@ -47,6 +53,11 @@
       "description": "Interact with documents"
     },
     {
+      "name": "search-blocks",
+      "title": "Search Blocks",
+      "description": "Search content within blocks. Can search across all documents or within a specific document. Supports plain text and regex patterns. Returns matching blocks with context."
+    },
+    {
       "name": "use-tasks",
       "title": "Use Tasks",
       "description": ""
@@ -62,6 +73,7 @@
     "@types/react": "19.0.10",
     "eslint": "^9.22.0",
     "prettier": "^3.5.3",
+    "react-devtools": "^6.1.1",
     "typescript": "^5.8.2"
   },
   "scripts": {
