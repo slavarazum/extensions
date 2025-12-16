@@ -1,130 +1,152 @@
 /**
- * Tasks API
+ * Tasks Domain
  *
- * All types, parameters, and methods for working with Craft tasks.
+ * Everything related to tasks in one place:
+ * - Types (params, responses)
+ * - Hook for React components
+ * - Async functions for tools
  */
 
-import { buildUrl, httpDelete, httpGet, httpPost, httpPut } from "./client";
+import { useFetch } from "@raycast/utils";
+import { buildUrl, httpGet, httpPost, httpPut, httpDelete } from "./client";
+import type { Task, TaskScope } from "./types";
 
 // =============================================================================
-// Endpoints
+// Endpoint
 // =============================================================================
 
-export const TaskEndpoints = {
-  tasks: "/tasks",
-} as const;
+const ENDPOINT = "/tasks";
 
 // =============================================================================
-// Core Types
+// Parameters & Responses
 // =============================================================================
 
-export interface Task {
-  id: string;
-  markdown: string;
-  state: "todo" | "done" | "canceled";
+export interface TasksParams {
+  scope?: TaskScope;
+  documentId?: string;
+  date?: string;
+}
+
+interface TasksResponse {
+  tasks: Task[];
+}
+
+interface UpdateTaskPayload {
+  state?: "todo" | "done" | "canceled";
   scheduleDate?: string;
   deadlineDate?: string;
 }
 
-// =============================================================================
-// Location & Scope Types
-// =============================================================================
-
-export type TaskScope = "active" | "upcoming" | "inbox" | "logbook" | "document";
-
-export type TaskLocation =
-  | { type: "inbox" }
-  | { type: "dailyNote"; date: string }
-  | { type: "document"; documentId: string };
-
-// =============================================================================
-// Request Parameters
-// =============================================================================
-
-export interface GetTasksParams {
-  scope?: TaskScope;
-  documentId?: string; // Required when scope is "document"
-  date?: string; // For upcoming scope filtering
-}
-
-export interface AddTasksParams {
-  tasks: {
-    blockId: string;
-    taskInfo: {
-      state?: "todo" | "done" | "canceled";
-      scheduleDate?: string;
-      deadlineDate?: string;
-    };
-  }[];
-}
-
-export interface UpdateTasksParams {
-  tasks: {
-    blockId: string;
-    updates: {
-      state?: "todo" | "done" | "canceled";
-      scheduleDate?: string;
-      deadlineDate?: string;
-    };
-  }[];
-}
-
-export interface DeleteTasksParams {
-  blockIds: string[];
-}
-
-// =============================================================================
-// Response Types
-// =============================================================================
-
-export interface GetTasksResponse {
-  tasks: Task[];
-}
-
-export interface AddTasksResponse {
-  addedTasks: Task[];
-}
-
-export interface UpdateTasksResponse {
+interface UpdateTasksResponse {
   updatedTasks: Task[];
 }
 
-export interface DeleteTasksResponse {
+interface DeleteTasksResponse {
   deletedTaskIds: string[];
 }
 
 // =============================================================================
-// URL Builders
+// Internal: URL Builder
 // =============================================================================
 
-export function buildGetTasksUrl(params?: GetTasksParams): string {
-  const builder = buildUrl(TaskEndpoints.tasks);
-  if (params) {
-    builder.params(params);
-  }
-  return builder.build();
+function tasksUrl(params?: TasksParams): string {
+  return buildUrl(ENDPOINT, params as Record<string, string | undefined>);
 }
 
 // =============================================================================
-// API Methods
+// Hook: useTasks
 // =============================================================================
 
-export async function getTasks(params?: GetTasksParams): Promise<GetTasksResponse> {
-  const url = buildGetTasksUrl(params);
-  return httpGet<GetTasksResponse>(url);
+export interface UseTasksResult {
+  tasks: Task[];
+  isLoading: boolean;
+  error?: Error;
+  revalidate: () => void;
 }
 
-export async function addTasks(params: AddTasksParams): Promise<AddTasksResponse> {
-  const url = buildUrl(TaskEndpoints.tasks).build();
-  return httpPost<AddTasksResponse>(url, params);
+/**
+ * Fetch tasks with automatic caching and revalidation
+ *
+ * @example
+ * ```tsx
+ * const { tasks, isLoading } = useTasks({ scope: "active" });
+ * ```
+ */
+export function useTasks(params?: TasksParams): UseTasksResult {
+  const { data, isLoading, error, revalidate } = useFetch<TasksResponse>(tasksUrl(params), {
+    keepPreviousData: true,
+  });
+
+  return {
+    tasks: data?.tasks ?? [],
+    isLoading,
+    error,
+    revalidate,
+  };
 }
 
-export async function updateTasks(params: UpdateTasksParams): Promise<UpdateTasksResponse> {
-  const url = buildUrl(TaskEndpoints.tasks).build();
-  return httpPut<UpdateTasksResponse>(url, params);
+// =============================================================================
+// Hook: useTaskActions
+// =============================================================================
+
+export interface TaskActions {
+  complete: (taskId: string) => Promise<void>;
+  reopen: (taskId: string) => Promise<void>;
+  cancel: (taskId: string) => Promise<void>;
+  update: (taskId: string, updates: UpdateTaskPayload) => Promise<void>;
+  remove: (taskId: string) => Promise<void>;
 }
 
-export async function deleteTasks(params: DeleteTasksParams): Promise<DeleteTasksResponse> {
-  const url = buildUrl(TaskEndpoints.tasks).build();
-  return httpDelete<DeleteTasksResponse>(url, params);
+/**
+ * Task mutation actions
+ *
+ * @example
+ * ```tsx
+ * const { tasks, revalidate } = useTasks({ scope: "active" });
+ * const actions = useTaskActions();
+ *
+ * const handleComplete = async (task: Task) => {
+ *   await actions.complete(task.id);
+ *   revalidate();
+ * };
+ * ```
+ */
+export function useTaskActions(): TaskActions {
+  return {
+    complete: (taskId) => updateTask(taskId, { state: "done" }),
+    reopen: (taskId) => updateTask(taskId, { state: "todo" }),
+    cancel: (taskId) => updateTask(taskId, { state: "canceled" }),
+    update: updateTask,
+    remove: deleteTask,
+  };
+}
+
+// =============================================================================
+// Async Functions (for tools)
+// =============================================================================
+
+/**
+ * Fetch tasks (for tools/non-React code)
+ */
+export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
+  const response = await httpGet<TasksResponse>(tasksUrl(params));
+  return response.tasks;
+}
+
+/**
+ * Update a task's state or dates
+ */
+export async function updateTask(taskId: string, updates: UpdateTaskPayload): Promise<void> {
+  await httpPut<UpdateTasksResponse>(buildUrl(ENDPOINT), {
+    tasks: [{ blockId: taskId, updates }],
+  });
+}
+
+/**
+ * Delete a task
+ */
+export async function deleteTask(taskId: string): Promise<void> {
+  await httpDelete<DeleteTasksResponse>(buildUrl(ENDPOINT), {
+    blockIds: [taskId],
+  });
 }

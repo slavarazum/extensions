@@ -1,24 +1,79 @@
 /**
  * Craft API
  *
- * Re-exports all API modules for convenient imports.
- * Each domain file contains all related types, parameters, responses, and methods.
+ * Clean re-exports organized by domain.
+ * Import from here for best DX.
  */
 
-// Client utilities
-export { API_BASE_URL, URLBuilder, buildUrl } from "./client";
+// Types - shared across all domains
+export type {
+  Block,
+  BlockType,
+  BlockMetadata,
+  BlockPosition,
+  TextStyle,
+  ListStyle,
+  Document,
+  DocumentSearchMatch,
+  VirtualLocation,
+  Task,
+  TaskInfo,
+  TaskScope,
+  SearchMatch,
+} from "./types";
 
-// Blocks API - Block types, search matches, and block operations
-export * from "./blocks";
+export { API_BASE_URL, ApiError } from "./types";
 
-// Documents API - Document types and document operations
-export * from "./documents";
+// Tasks domain
+export {
+  // Hook
+  useTasks,
+  useTaskActions,
+  // Async functions (for tools)
+  fetchTasks,
+  updateTask,
+  deleteTask,
+  // Types
+  type TasksParams,
+  type UseTasksResult,
+  type TaskActions,
+} from "./tasks";
 
-// Tasks API - Task types and task operations
-export * from "./tasks";
+// Documents domain
+export {
+  // Hooks
+  useDocuments,
+  useDocumentSearch,
+  // Async functions (for tools)
+  fetchDocuments,
+  searchDocuments,
+  createDocument,
+  deleteDocuments,
+  // Types
+  type ListDocumentsParams,
+  type SearchDocumentsParams,
+  type UseDocumentsResult,
+  type UseDocumentSearchResult,
+} from "./documents";
 
-// Folders API - Folder types and folder operations
-export * from "./folders";
-
-// Collections API - Collection types and collection operations
-export * from "./collections";
+// Blocks domain
+export {
+  // Hooks
+  useBlocks,
+  useBlockSearch,
+  useDailyNote,
+  // Async functions (for tools)
+  fetchBlocks,
+  searchBlocks,
+  insertBlock,
+  insertBlocks,
+  updateBlocks,
+  deleteBlocks,
+  // Types
+  type GetBlocksParams,
+  type SearchBlocksParams,
+  type InsertBlockParams,
+  type UseBlocksResult,
+  type UseBlockSearchResult,
+  type UseDailyNoteResult,
+} from "./blocks";

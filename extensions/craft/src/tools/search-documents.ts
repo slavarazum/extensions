@@ -10,10 +10,9 @@ export default async function (input: Input) {
 }
 
 export const confirmation: Tool.Confirmation<Input> = async (input) => {
-
-  console.log(input)
+  console.log(input);
 
   return {
-    title: "Run Tool",
+    message: `Search for "${input.query}"?`,
   };
 };

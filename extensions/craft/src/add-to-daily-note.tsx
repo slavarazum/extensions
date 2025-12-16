@@ -1,40 +1,51 @@
-import { Form, ActionPanel, Action, showToast } from "@raycast/api";
+import { Form, ActionPanel, Action, showToast, Toast, popToRoot } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
+import { useDailyNote, type Block } from "./api";
 
-type Values = {
-  textfield: string;
-  textarea: string;
-  datepicker: Date;
-  checkbox: boolean;
-  dropdown: string;
-  tokeneditor: string[];
-};
+interface FormValues {
+  content: string;
+  listStyle: Block["listStyle"];
+}
 
 export default function Command() {
-  function handleSubmit(values: Values) {
-    console.log(values);
-    showToast({ title: "Submitted form", message: "See logs for submitted values" });
+  const { addContent } = useDailyNote();
+
+  async function handleSubmit(values: FormValues) {
+    if (!values.content.trim()) {
+      await showToast({ style: Toast.Style.Failure, title: "Content is required" });
+      return;
+    }
+
+    const toast = await showToast({ style: Toast.Style.Animated, title: "Adding to daily note..." });
+
+    try {
+      await addContent(values.content, values.listStyle || "none");
+
+      toast.style = Toast.Style.Success;
+      toast.title = "Added to daily note";
+      await popToRoot();
+    } catch (error) {
+      await showFailureToast(error, { title: "Failed to add to daily note" });
+    }
   }
 
   return (
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Add to Daily Note" onSubmit={handleSubmit} />
         </ActionPanel>
       }
     >
-      <Form.Description text="This form showcases all available form elements." />
-      <Form.TextField id="textfield" title="Text field" placeholder="Enter text" defaultValue="Raycast" />
-      <Form.TextArea id="textarea" title="Text area" placeholder="Enter multi-line text" />
+      <Form.TextArea id="content" title="Content" placeholder="Enter text to add to today's daily note..." autoFocus />
       <Form.Separator />
-      <Form.DatePicker id="datepicker" title="Date picker" />
-      <Form.Checkbox id="checkbox" title="Checkbox" label="Checkbox Label" storeValue />
-      <Form.Dropdown id="dropdown" title="Dropdown">
-        <Form.Dropdown.Item value="dropdown-item" title="Dropdown Item" />
+      <Form.Dropdown id="listStyle" title="List Style" defaultValue="none">
+        <Form.Dropdown.Item value="none" title="None" />
+        <Form.Dropdown.Item value="bullet" title="Bullet" />
+        <Form.Dropdown.Item value="numbered" title="Numbered" />
+        <Form.Dropdown.Item value="task" title="Task" />
+        <Form.Dropdown.Item value="toggle" title="Toggle" />
       </Form.Dropdown>
-      <Form.TagPicker id="tokeneditor" title="Tag picker">
-        <Form.TagPicker.Item value="tagpicker-item" title="Tag Picker Item" />
-      </Form.TagPicker>
     </Form>
   );
 }

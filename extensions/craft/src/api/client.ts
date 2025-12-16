@@ -1,111 +1,61 @@
 /**
- * Craft API Client Base
+ * HTTP Client - Pure Data Layer
  *
- * Core HTTP client and URL building utilities for the Craft API.
+ * Low-level HTTP utilities. No UI concerns.
+ * Used internally by domain modules.
  */
 
-// =============================================================================
-// Configuration
-// =============================================================================
-
-export const API_BASE_URL = "https://connect.craft.do/links/CbwiyeDAUMD/api/v1";
+import { API_BASE_URL, ApiError } from "./types";
 
 // =============================================================================
 // URL Builder
 // =============================================================================
 
-type QueryParamValue = string | number | boolean | string[] | undefined;
+type QueryValue = string | number | boolean | string[] | undefined;
 
-export class URLBuilder {
-  private baseUrl: string;
-  private pathSegment: string;
-  private searchParams: URLSearchParams;
+export function buildUrl(endpoint: string, params?: Record<string, QueryValue>): string {
+  const url = `${API_BASE_URL}${endpoint}`;
 
-  constructor(path: string, baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-    this.pathSegment = path;
-    this.searchParams = new URLSearchParams();
-  }
+  if (!params) return url;
 
-  /**
-   * Add a single parameter (chainable)
-   */
-  param(key: string, value: QueryParamValue): this {
-    if (value === undefined) return this;
+  const searchParams = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue;
 
     if (Array.isArray(value)) {
       for (const v of value) {
-        this.searchParams.append(key, v);
+        searchParams.append(key, v);
       }
     } else {
-      this.searchParams.set(key, String(value));
+      searchParams.set(key, String(value));
     }
-    return this;
   }
 
-  /**
-   * Add multiple parameters at once (chainable)
-   * Accepts any object with string keys
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  params(queryParams: Record<string, any>): this {
-    for (const [key, value] of Object.entries(queryParams)) {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          for (const v of value) {
-            this.searchParams.append(key, String(v));
-          }
-        } else {
-          this.searchParams.set(key, String(value));
-        }
-      }
-    }
-    return this;
-  }
-
-  /**
-   * Build the final URL string
-   */
-  build(): string {
-    const queryString = this.searchParams.toString();
-    const url = `${this.baseUrl}${this.pathSegment}`;
-    return queryString ? `${url}?${queryString}` : url;
-  }
-
-  /**
-   * Build as URL object
-   */
-  toURL(): URL {
-    return new URL(this.build());
-  }
+  const queryString = searchParams.toString();
+  return queryString ? `${url}?${queryString}` : url;
 }
 
 // =============================================================================
-// HTTP Client
+// HTTP Methods
 // =============================================================================
 
-/**
- * Execute a GET request
- */
-export async function httpGet<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
+async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new ApiError(response.status, response.statusText, errorText);
   }
-
   return response.json();
 }
 
-/**
- * Execute a POST request
- */
+export async function httpGet<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  return handleResponse<T>(response);
+}
+
 export async function httpPost<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
@@ -115,18 +65,9 @@ export async function httpPost<T>(url: string, body: unknown): Promise<T> {
     },
     body: JSON.stringify(body),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-
-  return response.json();
+  return handleResponse<T>(response);
 }
 
-/**
- * Execute a PUT request
- */
 export async function httpPut<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "PUT",
@@ -136,18 +77,9 @@ export async function httpPut<T>(url: string, body: unknown): Promise<T> {
     },
     body: JSON.stringify(body),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-
-  return response.json();
+  return handleResponse<T>(response);
 }
 
-/**
- * Execute a DELETE request
- */
 export async function httpDelete<T>(url: string, body?: unknown): Promise<T> {
   const response = await fetch(url, {
     method: "DELETE",
@@ -157,19 +89,5 @@ export async function httpDelete<T>(url: string, body?: unknown): Promise<T> {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
-  }
-
-  return response.json();
-}
-
-// =============================================================================
-// Helper to create URL builder
-// =============================================================================
-
-export function buildUrl(endpoint: string): URLBuilder {
-  return new URLBuilder(endpoint);
+  return handleResponse<T>(response);
 }

@@ -1,14 +1,10 @@
-import { ActionPanel, Action, List, Icon, Detail, Color, showToast, Toast } from "@raycast/api";
-import { useFetch } from "@raycast/utils";
+import { ActionPanel, Action, List, Icon, Detail, Color } from "@raycast/api";
 import { useState } from "react";
 import {
-  buildSearchBlocksUrl,
-  buildSearchDocumentsUrl,
-  buildListDocumentsUrl,
+  useDocuments,
+  useBlockSearch,
+  useDocumentSearch,
   type SearchMatch,
-  type ListDocumentsResponse,
-  type SearchBlocksResponse,
-  type SearchDocumentsResponse,
   type DocumentSearchMatch,
 } from "./api";
 
@@ -16,67 +12,32 @@ export default function Command() {
   const [searchText, setSearchText] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>("all");
 
-  // Fetch documents for the dropdown using the API service
-  const { data: documentsData, isLoading: isLoadingDocuments } = useFetch<ListDocumentsResponse>(
-    buildListDocumentsUrl(),
-    {
-      keepPreviousData: true,
-    },
-  );
+  // Fetch documents for the dropdown
+  const { documents, isLoading: isLoadingDocuments } = useDocuments();
 
-  // Determine search mode: "all" uses /documents/search, specific doc uses /blocks/search
+  // Determine search mode
   const isSearchingAllDocs = selectedDocumentId === "all";
   const canSearch = searchText.length > 0;
 
-  // Build search URL based on mode
-  const blocksSearchUrl = !isSearchingAllDocs && canSearch
-    ? buildSearchBlocksUrl({
-        blockId: selectedDocumentId,
-        pattern: searchText,
-        beforeBlockCount: 3,
-        afterBlockCount: 3,
-      })
-    : "";
+  // Search within specific document (only when a specific doc is selected)
+  const { matches: blockMatches, isLoading: isSearchingBlocks } = useBlockSearch(
+    isSearchingAllDocs ? "" : selectedDocumentId,
+    searchText,
+    { beforeBlockCount: 3, afterBlockCount: 3 },
+  );
 
-  const docsSearchUrl = isSearchingAllDocs && canSearch
-    ? buildSearchDocumentsUrl({
-        include: searchText,
-      })
-    : "";
-
-  // Fetch for blocks search (within a specific document)
-  const { data: blocksSearchData, isLoading: isSearchingBlocks } = useFetch<SearchBlocksResponse>(blocksSearchUrl, {
-    execute: !isSearchingAllDocs && canSearch,
-    keepPreviousData: true,
-    onError: (error) => {
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Search failed",
-        message: error.message,
-      });
-    },
-  });
-
-  // Fetch for documents search (across all documents)
-  const { data: docsSearchData, isLoading: isSearchingDocs } = useFetch<SearchDocumentsResponse>(docsSearchUrl, {
-    execute: isSearchingAllDocs && canSearch,
-    keepPreviousData: true,
-    onError: (error) => {
-      showToast({
-        style: Toast.Style.Failure,
-        title: "Search failed",
-        message: error.message,
-      });
-    },
-  });
+  // Search across all documents (only when "all" is selected)
+  const { results: docResults, isLoading: isSearchingDocs } = useDocumentSearch(
+    isSearchingAllDocs ? searchText : "",
+  );
 
   // Combine results - normalize to a common format
   const searchResults: SearchMatch[] = isSearchingAllDocs
-    ? (docsSearchData?.items || []).map((item: DocumentSearchMatch) => ({
+    ? docResults.map((item: DocumentSearchMatch) => ({
         documentId: item.documentId,
         markdown: item.markdown,
       }))
-    : (blocksSearchData?.matches || []);
+    : blockMatches;
 
   const isLoading = isLoadingDocuments || (canSearch && (isSearchingBlocks || isSearchingDocs));
   const hasResults = searchResults.length > 0;
@@ -88,24 +49,24 @@ export default function Command() {
       searchBarPlaceholder="Search blocks..."
       throttle
       searchBarAccessory={
-        <List.Dropdown
-          tooltip="Select Document"
-          value={selectedDocumentId}
-          onChange={setSelectedDocumentId}
-        >
+        <List.Dropdown tooltip="Select Document" value={selectedDocumentId} onChange={setSelectedDocumentId}>
           <List.Dropdown.Item title="All Documents" value="all" icon={Icon.Globe} />
           <List.Dropdown.Section title="Documents">
-            {documentsData?.documents?.map((doc) => (
+            {documents.map((doc) => (
               <List.Dropdown.Item key={doc.id} title={doc.title || "Untitled"} value={doc.id} icon={Icon.Document} />
             ))}
           </List.Dropdown.Section>
         </List.Dropdown>
       }
     >
-      {searchText.length === 0 ? (
+      {!canSearch ? (
         <List.EmptyView icon={Icon.MagnifyingGlass} title="Start typing to search blocks" />
       ) : !hasResults && !isLoading ? (
-        <List.EmptyView icon={Icon.XMarkCircle} title="No results found" description={`No blocks match "${searchText}"`} />
+        <List.EmptyView
+          icon={Icon.XMarkCircle}
+          title="No results found"
+          description={`No blocks match "${searchText}"`}
+        />
       ) : (
         <List.Section title="Search Results" subtitle={`${searchResults.length} matches`}>
           {searchResults.map((match, index) => (
@@ -130,28 +91,20 @@ function SearchResultItem({ match }: { match: SearchMatch }) {
       icon={Icon.TextDocument}
       title={truncatedText || "Empty block"}
       subtitle={pathBreadcrumb}
-      accessories={[
-        match.documentId ? { tag: { value: "Document", color: Color.Blue } } : null,
-        match.blockId ? { text: match.blockId.substring(0, 8) } : null,
-      ].filter(Boolean) as { tag?: { value: string; color: Color }; text?: string }[]}
+      accessories={
+        [
+          match.documentId ? { tag: { value: "Document", color: Color.Blue } } : null,
+          match.blockId ? { text: match.blockId.substring(0, 8) } : null,
+        ].filter(Boolean) as { tag?: { value: string; color: Color }; text?: string }[]
+      }
       actions={
         <ActionPanel>
-          <Action.Push
-            title="View Details"
-            icon={Icon.Eye}
-            target={<BlockDetailView match={match} />}
-          />
+          <Action.Push title="View Details" icon={Icon.Eye} target={<BlockDetailView match={match} />} />
           {match.documentId && (
-            <Action.OpenInBrowser
-              title="Open in Craft"
-              url={`craftdocs://open?blockId=${match.documentId}`}
-            />
+            <Action.OpenInBrowser title="Open in Craft" url={`craftdocs://open?blockId=${match.documentId}`} />
           )}
           {match.blockId && (
-            <Action.OpenInBrowser
-              title="Open Block in Craft"
-              url={`craftdocs://open?blockId=${match.blockId}`}
-            />
+            <Action.OpenInBrowser title="Open Block in Craft" url={`craftdocs://open?blockId=${match.blockId}`} />
           )}
           <Action.CopyToClipboard
             title="Copy Content"
@@ -212,16 +165,10 @@ function BlockDetailView({ match }: { match: SearchMatch }) {
       actions={
         <ActionPanel>
           {match.documentId && (
-            <Action.OpenInBrowser
-              title="Open in Craft"
-              url={`craftdocs://open?blockId=${match.documentId}`}
-            />
+            <Action.OpenInBrowser title="Open in Craft" url={`craftdocs://open?blockId=${match.documentId}`} />
           )}
           {match.blockId && (
-            <Action.OpenInBrowser
-              title="Open Block in Craft"
-              url={`craftdocs://open?blockId=${match.blockId}`}
-            />
+            <Action.OpenInBrowser title="Open Block in Craft" url={`craftdocs://open?blockId=${match.blockId}`} />
           )}
           <Action.CopyToClipboard
             title="Copy Content"

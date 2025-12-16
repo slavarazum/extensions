@@ -1,60 +1,28 @@
 /**
- * Documents API
+ * Documents Domain
  *
- * All types, parameters, and methods for working with Craft documents.
+ * Everything related to documents in one place:
+ * - Types (params, responses)
+ * - Hooks for React components
+ * - Async functions for tools
  */
 
-import { buildUrl, httpDelete, httpGet, httpPost } from "./client";
-import type { Block } from "./blocks";
+import { useFetch } from "@raycast/utils";
+import { buildUrl, httpGet, httpPost, httpDelete } from "./client";
+import type { Document, DocumentSearchMatch, VirtualLocation } from "./types";
 
 // =============================================================================
 // Endpoints
 // =============================================================================
 
-export const DocumentEndpoints = {
+const ENDPOINTS = {
   documents: "/documents",
   search: "/documents/search",
   move: "/documents/move",
 } as const;
 
 // =============================================================================
-// Core Types
-// =============================================================================
-
-export interface Document {
-  id: string;
-  title: string;
-  metadata?: {
-    lastModifiedAt?: string;
-    createdAt?: string;
-  };
-}
-
-// =============================================================================
-// Location Types
-// =============================================================================
-
-export type VirtualLocation = "unsorted" | "trash" | "templates" | "daily_notes";
-
-export type DocumentDestination =
-  | { destination: "unsorted" | "templates" }
-  | { folderId: string };
-
-// =============================================================================
-// Search Types
-// =============================================================================
-
-export interface DocumentSearchMatch {
-  documentId: string;
-  markdown: string;
-  metadata?: {
-    lastModifiedAt?: string;
-    createdAt?: string;
-  };
-}
-
-// =============================================================================
-// Request Parameters
+// Parameters
 // =============================================================================
 
 export interface ListDocumentsParams {
@@ -64,107 +32,161 @@ export interface ListDocumentsParams {
 }
 
 export interface SearchDocumentsParams {
-  /** Search terms to include in the search. Can be a single string or array of strings */
   include?: string | string[];
-  /** Search terms using RE2-compatible regex syntax */
   regexps?: string[];
-  /** Document IDs to filter (cannot be used with location or folderIds) */
   documentIds?: string[];
-  /** Whether to include document metadata */
   fetchMetadata?: boolean;
-  /** Filter by virtual location */
   location?: VirtualLocation;
-  /** Filter by specific folders */
   folderIds?: string[];
-  /** Date filters */
   createdDateGte?: string;
   createdDateLte?: string;
   lastModifiedDateGte?: string;
   lastModifiedDateLte?: string;
-  dailyNoteDateGte?: string;
-  dailyNoteDateLte?: string;
-}
-
-export interface CreateDocumentParams {
-  title: string;
-  destination?: DocumentDestination;
-  blocks?: Partial<Block>[];
-}
-
-export interface DeleteDocumentsParams {
-  documentIds: string[];
-}
-
-export interface MoveDocumentsParams {
-  documentIds: string[];
-  destination: DocumentDestination;
 }
 
 // =============================================================================
-// Response Types
+// Responses
 // =============================================================================
 
-export interface ListDocumentsResponse {
+interface DocumentsResponse {
   documents: Document[];
 }
 
-export interface SearchDocumentsResponse {
+interface SearchDocumentsResponse {
   items: DocumentSearchMatch[];
 }
 
-export interface CreateDocumentResponse {
-  document: Document;
-}
-
-export interface DeleteDocumentsResponse {
-  deletedDocumentIds: string[];
-}
-
-export interface MoveDocumentsResponse {
-  movedDocumentIds: string[];
-}
-
 // =============================================================================
-// URL Builders
+// Internal: URL Builders
 // =============================================================================
 
-export function buildListDocumentsUrl(params?: ListDocumentsParams): string {
-  const builder = buildUrl(DocumentEndpoints.documents);
-  if (params) {
-    builder.params(params);
+function documentsUrl(params?: ListDocumentsParams): string {
+  return buildUrl(ENDPOINTS.documents, params as Record<string, string | boolean | undefined>);
+}
+
+function searchDocumentsUrl(params: SearchDocumentsParams): string {
+  // Handle array params
+  const flatParams: Record<string, string | boolean | undefined> = {
+    fetchMetadata: params.fetchMetadata,
+    location: params.location,
+  };
+
+  // include can be string or array
+  if (typeof params.include === "string") {
+    flatParams.include = params.include;
   }
-  return builder.build();
-}
 
-export function buildSearchDocumentsUrl(params: SearchDocumentsParams): string {
-  return buildUrl(DocumentEndpoints.search).params(params).build();
+  return buildUrl(ENDPOINTS.search, flatParams);
 }
 
 // =============================================================================
-// API Methods
+// Hook: useDocuments
 // =============================================================================
 
-export async function listDocuments(params?: ListDocumentsParams): Promise<ListDocumentsResponse> {
-  const url = buildListDocumentsUrl(params);
-  return httpGet<ListDocumentsResponse>(url);
+export interface UseDocumentsResult {
+  documents: Document[];
+  isLoading: boolean;
+  error?: Error;
+  revalidate: () => void;
 }
 
-export async function searchDocuments(params: SearchDocumentsParams): Promise<SearchDocumentsResponse> {
-  const url = buildSearchDocumentsUrl(params);
-  return httpGet<SearchDocumentsResponse>(url);
+/**
+ * Fetch documents list
+ *
+ * @example
+ * ```tsx
+ * const { documents, isLoading } = useDocuments();
+ * ```
+ */
+export function useDocuments(params?: ListDocumentsParams): UseDocumentsResult {
+  const { data, isLoading, error, revalidate } = useFetch<DocumentsResponse>(documentsUrl(params), {
+    keepPreviousData: true,
+  });
+
+  return {
+    documents: data?.documents ?? [],
+    isLoading,
+    error,
+    revalidate,
+  };
 }
 
-export async function createDocument(params: CreateDocumentParams): Promise<CreateDocumentResponse> {
-  const url = buildUrl(DocumentEndpoints.documents).build();
-  return httpPost<CreateDocumentResponse>(url, params);
+// =============================================================================
+// Hook: useDocumentSearch
+// =============================================================================
+
+export interface UseDocumentSearchResult {
+  results: DocumentSearchMatch[];
+  isLoading: boolean;
+  hasQuery: boolean;
+  error?: Error;
+  revalidate: () => void;
 }
 
-export async function deleteDocuments(params: DeleteDocumentsParams): Promise<DeleteDocumentsResponse> {
-  const url = buildUrl(DocumentEndpoints.documents).build();
-  return httpDelete<DeleteDocumentsResponse>(url, params);
+/**
+ * Search documents
+ *
+ * @example
+ * ```tsx
+ * const [query, setQuery] = useState("");
+ * const { results, isLoading, hasQuery } = useDocumentSearch(query);
+ * ```
+ */
+export function useDocumentSearch(query: string, params?: Omit<SearchDocumentsParams, "include">): UseDocumentSearchResult {
+  const hasQuery = query.length > 0;
+
+  const { data, isLoading, error, revalidate } = useFetch<SearchDocumentsResponse>(
+    searchDocumentsUrl({ ...params, include: query }),
+    {
+      execute: hasQuery,
+      keepPreviousData: true,
+    },
+  );
+
+  return {
+    results: data?.items ?? [],
+    isLoading: hasQuery ? isLoading : false,
+    hasQuery,
+    error,
+    revalidate,
+  };
 }
 
-export async function moveDocuments(params: MoveDocumentsParams): Promise<MoveDocumentsResponse> {
-  const url = buildUrl(DocumentEndpoints.move).build();
-  return httpPost<MoveDocumentsResponse>(url, params);
+// =============================================================================
+// Async Functions (for tools)
+// =============================================================================
+
+/**
+ * Fetch documents list (for tools)
+ */
+export async function fetchDocuments(params?: ListDocumentsParams): Promise<Document[]> {
+  const response = await httpGet<DocumentsResponse>(documentsUrl(params));
+  return response.documents;
+}
+
+/**
+ * Search documents (for tools)
+ */
+export async function searchDocuments(params: SearchDocumentsParams): Promise<DocumentSearchMatch[]> {
+  const response = await httpGet<SearchDocumentsResponse>(searchDocumentsUrl(params));
+  return response.items;
+}
+
+/**
+ * Create a new document
+ */
+export async function createDocument(params: {
+  title: string;
+  destination?: { destination: "unsorted" | "templates" } | { folderId: string };
+}): Promise<Document> {
+  const response = await httpPost<{ document: Document }>(buildUrl(ENDPOINTS.documents), params);
+  return response.document;
+}
+
+/**
+ * Delete documents
+ */
+export async function deleteDocuments(documentIds: string[]): Promise<string[]> {
+  const response = await httpDelete<{ deletedDocumentIds: string[] }>(buildUrl(ENDPOINTS.documents), { documentIds });
+  return response.deletedDocumentIds;
 }
