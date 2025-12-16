@@ -11,34 +11,6 @@
 export const API_BASE_URL = "https://connect.craft.do/links/CbwiyeDAUMD/api/v1";
 
 // =============================================================================
-// Endpoints
-// =============================================================================
-
-export const Endpoints = {
-  // Blocks
-  blocks: "/blocks",
-  blocksSearch: "/blocks/search",
-  blocksMove: "/blocks/move",
-
-  // Documents
-  documents: "/documents",
-  documentsSearch: "/documents/search",
-  documentsMove: "/documents/move",
-
-  // Folders
-  folders: "/folders",
-  foldersMove: "/folders/move",
-
-  // Collections
-  collections: "/collections",
-  collectionSchema: (id: string) => `/collections/${id}/schema`,
-  collectionItems: (id: string) => `/collections/${id}/items`,
-
-  // Tasks
-  tasks: "/tasks",
-} as const;
-
-// =============================================================================
 // URL Builder
 // =============================================================================
 

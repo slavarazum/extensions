@@ -1,18 +1,62 @@
 /**
  * Collections API
  *
- * API methods for working with Craft collections.
+ * All types, parameters, and methods for working with Craft collections.
  */
 
-import { buildUrl, Endpoints, httpGet } from "./client";
-import type {
-  Collection,
-  CollectionSchema,
-  CollectionItem,
-  ListCollectionsParams,
-  GetCollectionSchemaParams,
-  GetCollectionItemsParams,
-} from "./types";
+import { buildUrl, httpGet } from "./client";
+
+// =============================================================================
+// Endpoints
+// =============================================================================
+
+export const CollectionEndpoints = {
+  collections: "/collections",
+  schema: (id: string) => `/collections/${id}/schema`,
+  items: (id: string) => `/collections/${id}/items`,
+} as const;
+
+// =============================================================================
+// Core Types
+// =============================================================================
+
+export interface Collection {
+  key: string;
+  name: string;
+  documentId: string;
+  schema?: CollectionSchema;
+}
+
+export interface CollectionSchema {
+  fields: {
+    name: string;
+    type: string;
+    options?: unknown;
+  }[];
+}
+
+export interface CollectionItem {
+  id: string;
+  fields: Record<string, unknown>;
+}
+
+// =============================================================================
+// Request Parameters
+// =============================================================================
+
+export interface ListCollectionsParams {
+  documentIds?: string[];
+}
+
+export interface GetCollectionSchemaParams {
+  collectionId: string;
+  format?: "schema" | "json-schema-items";
+}
+
+export interface GetCollectionItemsParams {
+  collectionId: string;
+  maxDepth?: number;
+}
 
 // =============================================================================
 // Response Types
@@ -34,55 +78,38 @@ export interface GetCollectionItemsResponse {
 // URL Builders
 // =============================================================================
 
-/**
- * Build URL for listing collections
- */
 export function buildListCollectionsUrl(params?: ListCollectionsParams): string {
-  const builder = buildUrl(Endpoints.collections);
+  const builder = buildUrl(CollectionEndpoints.collections);
   if (params) {
     builder.params(params);
   }
   return builder.build();
 }
 
-/**
- * Build URL for getting collection schema
- */
 export function buildGetCollectionSchemaUrl(params: GetCollectionSchemaParams): string {
-  return buildUrl(Endpoints.collectionSchema(params.collectionId)).build();
+  const { collectionId, ...queryParams } = params;
+  return buildUrl(CollectionEndpoints.schema(collectionId)).params(queryParams).build();
 }
 
-/**
- * Build URL for getting collection items
- */
 export function buildGetCollectionItemsUrl(params: GetCollectionItemsParams): string {
   const { collectionId, ...queryParams } = params;
-  return buildUrl(Endpoints.collectionItems(collectionId)).params(queryParams).build();
+  return buildUrl(CollectionEndpoints.items(collectionId)).params(queryParams).build();
 }
 
 // =============================================================================
 // API Methods
 // =============================================================================
 
-/**
- * List all collections
- */
 export async function listCollections(params?: ListCollectionsParams): Promise<ListCollectionsResponse> {
   const url = buildListCollectionsUrl(params);
   return httpGet<ListCollectionsResponse>(url);
 }
 
-/**
- * Get the schema for a collection
- */
 export async function getCollectionSchema(params: GetCollectionSchemaParams): Promise<GetCollectionSchemaResponse> {
   const url = buildGetCollectionSchemaUrl(params);
   return httpGet<GetCollectionSchemaResponse>(url);
 }
 
-/**
- * Get items from a collection
- */
 export async function getCollectionItems(params: GetCollectionItemsParams): Promise<GetCollectionItemsResponse> {
   const url = buildGetCollectionItemsUrl(params);
   return httpGet<GetCollectionItemsResponse>(url);
