@@ -1,28 +1,49 @@
 /**
  * Documents API
  *
- * API methods for working with Craft documents.
+ * All types, parameters, and methods for working with Craft documents.
  */
 
-import { buildUrl, Endpoints, httpDelete, httpGet, httpPost } from "./client";
-import type {
-  Document,
-  ListDocumentsParams,
-  SearchDocumentsParams,
-  CreateDocumentParams,
-  DeleteDocumentsParams,
-  MoveDocumentsParams,
-} from "./types";
+import { buildUrl, httpDelete, httpGet, httpPost } from "./client";
+import type { Block } from "./blocks";
 
 // =============================================================================
-// Response Types
+// Endpoints
 // =============================================================================
 
-export interface ListDocumentsResponse {
-  documents: Document[];
+export const DocumentEndpoints = {
+  documents: "/documents",
+  search: "/documents/search",
+  move: "/documents/move",
+} as const;
+
+// =============================================================================
+// Core Types
+// =============================================================================
+
+export interface Document {
+  id: string;
+  title: string;
+  metadata?: {
+    lastModifiedAt?: string;
+    createdAt?: string;
+  };
 }
 
-/** Document search match result from /documents/search */
+// =============================================================================
+// Location Types
+// =============================================================================
+
+export type VirtualLocation = "unsorted" | "trash" | "templates" | "daily_notes";
+
+export type DocumentDestination =
+  | { destination: "unsorted" | "templates" }
+  | { folderId: string };
+
+// =============================================================================
+// Search Types
+// =============================================================================
+
 export interface DocumentSearchMatch {
   documentId: string;
   markdown: string;
@@ -30,6 +51,61 @@ export interface DocumentSearchMatch {
     lastModifiedAt?: string;
     createdAt?: string;
   };
+}
+
+// =============================================================================
+// Request Parameters
+// =============================================================================
+
+export interface ListDocumentsParams {
+  folderId?: string;
+  virtualLocation?: VirtualLocation;
+  includeMetadata?: boolean;
+}
+
+export interface SearchDocumentsParams {
+  /** Search terms to include in the search. Can be a single string or array of strings */
+  include?: string | string[];
+  /** Search terms using RE2-compatible regex syntax */
+  regexps?: string[];
+  /** Document IDs to filter (cannot be used with location or folderIds) */
+  documentIds?: string[];
+  /** Whether to include document metadata */
+  fetchMetadata?: boolean;
+  /** Filter by virtual location */
+  location?: VirtualLocation;
+  /** Filter by specific folders */
+  folderIds?: string[];
+  /** Date filters */
+  createdDateGte?: string;
+  createdDateLte?: string;
+  lastModifiedDateGte?: string;
+  lastModifiedDateLte?: string;
+  dailyNoteDateGte?: string;
+  dailyNoteDateLte?: string;
+}
+
+export interface CreateDocumentParams {
+  title: string;
+  destination?: DocumentDestination;
+  blocks?: Partial<Block>[];
+}
+
+export interface DeleteDocumentsParams {
+  documentIds: string[];
+}
+
+export interface MoveDocumentsParams {
+  documentIds: string[];
+  destination: DocumentDestination;
+}
+
+// =============================================================================
+// Response Types
+// =============================================================================
+
+export interface ListDocumentsResponse {
+  documents: Document[];
 }
 
 export interface SearchDocumentsResponse {
@@ -52,64 +128,43 @@ export interface MoveDocumentsResponse {
 // URL Builders
 // =============================================================================
 
-/**
- * Build URL for listing documents
- */
 export function buildListDocumentsUrl(params?: ListDocumentsParams): string {
-  const builder = buildUrl(Endpoints.documents);
+  const builder = buildUrl(DocumentEndpoints.documents);
   if (params) {
     builder.params(params);
   }
   return builder.build();
 }
 
-/**
- * Build URL for searching documents
- */
 export function buildSearchDocumentsUrl(params: SearchDocumentsParams): string {
-  return buildUrl(Endpoints.documentsSearch).params(params).build();
+  return buildUrl(DocumentEndpoints.search).params(params).build();
 }
 
 // =============================================================================
 // API Methods
 // =============================================================================
 
-/**
- * List documents in a folder
- */
 export async function listDocuments(params?: ListDocumentsParams): Promise<ListDocumentsResponse> {
   const url = buildListDocumentsUrl(params);
   return httpGet<ListDocumentsResponse>(url);
 }
 
-/**
- * Search for documents
- */
 export async function searchDocuments(params: SearchDocumentsParams): Promise<SearchDocumentsResponse> {
   const url = buildSearchDocumentsUrl(params);
   return httpGet<SearchDocumentsResponse>(url);
 }
 
-/**
- * Create a new document
- */
 export async function createDocument(params: CreateDocumentParams): Promise<CreateDocumentResponse> {
-  const url = buildUrl(Endpoints.documents).build();
+  const url = buildUrl(DocumentEndpoints.documents).build();
   return httpPost<CreateDocumentResponse>(url, params);
 }
 
-/**
- * Delete documents
- */
 export async function deleteDocuments(params: DeleteDocumentsParams): Promise<DeleteDocumentsResponse> {
-  const url = buildUrl(Endpoints.documents).build();
+  const url = buildUrl(DocumentEndpoints.documents).build();
   return httpDelete<DeleteDocumentsResponse>(url, params);
 }
 
-/**
- * Move documents to a different folder
- */
 export async function moveDocuments(params: MoveDocumentsParams): Promise<MoveDocumentsResponse> {
-  const url = buildUrl(Endpoints.documentsMove).build();
+  const url = buildUrl(DocumentEndpoints.move).build();
   return httpPost<MoveDocumentsResponse>(url, params);
 }
