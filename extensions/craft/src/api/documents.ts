@@ -26,6 +26,7 @@ export type VirtualLocation = "unsorted" | "trash" | "templates" | "daily_notes"
 export interface DocumentSearchMatch {
   documentId: string;
   markdown: string;
+  documentTitle?: string; // Enriched client-side
   lastModifiedAt?: string;
   createdAt?: string;
 }
@@ -161,8 +162,6 @@ export interface UseDocumentSearchResult {
  */
 export function useDocumentSearch(query: string, params?: Omit<SearchDocumentsParams, "include">): UseDocumentSearchResult {
   const hasQuery = query.length > 0;
-
-  console.log(searchDocumentsUrl({ ...params, include: query }))
 
   const { data, isLoading, error, revalidate } = useFetch<SearchDocumentsResponse>(
     searchDocumentsUrl({ ...params, include: query }),
