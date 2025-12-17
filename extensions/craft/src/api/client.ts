@@ -1,11 +1,22 @@
 /**
- * HTTP Client - Pure Data Layer
+ * Craft API Client
  *
- * Low-level HTTP utilities. No UI concerns.
- * Used internally by domain modules.
+ * Configuration and utilities for Craft Connect API.
  */
 
-import { API_BASE_URL, ApiError } from "./types";
+// =============================================================================
+// Configuration
+// =============================================================================
+
+// Craft Connect API endpoints
+// Full Space API - access to all documents, folders, blocks, tasks
+export const CRAFT_SPACE_API = "https://connect.craft.do/links/CbwiyeDAUMD/api/v1";
+
+// Daily Notes API - focused on daily notes and tasks
+export const CRAFT_DAILY_NOTES_API = "https://connect.craft.do/links/6fYEq6cozne/api/v1";
+
+// Default to Full Space API for general operations
+export const API_BASE_URL = CRAFT_SPACE_API;
 
 // =============================================================================
 // URL Builder
@@ -34,60 +45,4 @@ export function buildUrl(endpoint: string, params?: Record<string, QueryValue>):
 
   const queryString = searchParams.toString();
   return queryString ? `${url}?${queryString}` : url;
-}
-
-// =============================================================================
-// HTTP Methods
-// =============================================================================
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ApiError(response.status, response.statusText, errorText);
-  }
-  return response.json();
-}
-
-export async function httpGet<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
-  return handleResponse<T>(response);
-}
-
-export async function httpPost<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  return handleResponse<T>(response);
-}
-
-export async function httpPut<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  return handleResponse<T>(response);
-}
-
-export async function httpDelete<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  return handleResponse<T>(response);
 }

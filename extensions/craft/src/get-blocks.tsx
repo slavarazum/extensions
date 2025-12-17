@@ -7,9 +7,8 @@ export default function Command() {
 
   const { documents, isLoading: isLoadingDocuments } = useDocuments();
   const { blocks, isLoading: isLoadingBlocks } = useBlocks({
-    pageId: selectedDocumentId,
-    includeContent: true,
-    includeMetadata: true,
+    id: selectedDocumentId,
+    fetchMetadata: true,
   });
 
   const isLoading = isLoadingDocuments || (selectedDocumentId.length > 0 && isLoadingBlocks);

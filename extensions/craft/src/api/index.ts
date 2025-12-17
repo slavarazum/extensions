@@ -5,42 +5,36 @@
  * Import from here for best DX.
  */
 
-// Types - shared across all domains
-export type {
-  Block,
-  BlockType,
-  BlockMetadata,
-  BlockPosition,
-  TextStyle,
-  ListStyle,
-  Document,
-  DocumentSearchMatch,
-  VirtualLocation,
-  Task,
-  TaskInfo,
-  TaskScope,
-  SearchMatch,
-} from "./types";
-
-export { API_BASE_URL, ApiError } from "./types";
+// Client utilities (shared across domains)
+export { API_BASE_URL } from "./client";
 
 // Tasks domain
 export {
-  // Hook
+  // Types
+  type Task,
+  type TaskScope,
+  type TasksParams,
+  type UseTasksResult,
+  type TaskActions,
+  // Hooks
   useTasks,
   useTaskActions,
   // Async functions (for tools)
   fetchTasks,
   updateTask,
   deleteTask,
-  // Types
-  type TasksParams,
-  type UseTasksResult,
-  type TaskActions,
 } from "./tasks";
 
 // Documents domain
 export {
+  // Types
+  type Document,
+  type VirtualLocation,
+  type DocumentSearchMatch,
+  type ListDocumentsParams,
+  type SearchDocumentsParams,
+  type UseDocumentsResult,
+  type UseDocumentSearchResult,
   // Hooks
   useDocuments,
   useDocumentSearch,
@@ -49,15 +43,25 @@ export {
   searchDocuments,
   createDocument,
   deleteDocuments,
-  // Types
-  type ListDocumentsParams,
-  type SearchDocumentsParams,
-  type UseDocumentsResult,
-  type UseDocumentSearchResult,
 } from "./documents";
 
 // Blocks domain
 export {
+  // Types
+  type Block,
+  type BlockType,
+  type BlockMetadata,
+  type BlockPosition,
+  type TextStyle,
+  type ListStyle,
+  type TaskInfo,
+  type SearchMatch,
+  type GetBlocksParams,
+  type SearchBlocksParams,
+  type InsertBlockParams,
+  type UseBlocksResult,
+  type UseBlockSearchResult,
+  type UseDailyNoteResult,
   // Hooks
   useBlocks,
   useBlockSearch,
@@ -69,11 +73,4 @@ export {
   insertBlocks,
   updateBlocks,
   deleteBlocks,
-  // Types
-  type GetBlocksParams,
-  type SearchBlocksParams,
-  type InsertBlockParams,
-  type UseBlocksResult,
-  type UseBlockSearchResult,
-  type UseDailyNoteResult,
 } from "./blocks";
