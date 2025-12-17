@@ -109,8 +109,6 @@ function DocumentListItem({ document, documentTitle, spaceId }: { document: Docu
 
   const snippet = formatSnippet(document.markdown || "");
 
-  console.log(documentTitle, snippet, document.markdown);
-
   return (
     <List.Item
       icon={Icon.Document}
