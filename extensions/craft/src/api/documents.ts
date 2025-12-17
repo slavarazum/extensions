@@ -111,6 +111,10 @@ function searchDocumentsUrl(params: SearchDocumentsParams): string {
 // Hook: useDocuments
 // =============================================================================
 
+export interface UseDocumentsOptions {
+  execute?: boolean;
+}
+
 export interface UseDocumentsResult {
   documents: Document[];
   isLoading: boolean;
@@ -126,14 +130,15 @@ export interface UseDocumentsResult {
  * const { documents, isLoading } = useDocuments();
  * ```
  */
-export function useDocuments(params?: ListDocumentsParams): UseDocumentsResult {
+export function useDocuments(params?: ListDocumentsParams, options?: UseDocumentsOptions): UseDocumentsResult {
   const { data, isLoading, error, revalidate } = useFetch<DocumentsResponse>(documentsUrl(params), {
     keepPreviousData: true,
+    execute: options?.execute,
   });
 
   return {
     documents: data?.items ?? [],
-    isLoading,
+    isLoading: options?.execute === false ? false : isLoading,
     error,
     revalidate,
   };

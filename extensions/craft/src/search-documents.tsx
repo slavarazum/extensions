@@ -6,8 +6,8 @@ export default function Command() {
   const [searchText, setSearchText] = useState("");
   const { results, isLoading, hasQuery } = useDocumentSearch(searchText, { fetchMetadata: true });
 
-  // Fetch all documents to get their titles
-  const { documents, isLoading: isLoadingDocuments } = useDocuments();
+  // Fetch all documents to get their titles (only when searching)
+  const { documents, isLoading: isLoadingDocuments } = useDocuments(undefined, { execute: hasQuery });
 
   // Fetch space ID for deep links (workaround via API)
   const { spaceId, isLoading: isLoadingSpaceId } = useSpaceId();
