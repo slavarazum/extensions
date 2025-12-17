@@ -14,8 +14,8 @@ export default function Command() {
       throttle
     >
       <List.Section title="Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
-        {results.map((doc) => (
-          <DocumentListItem key={doc.documentId} document={doc} />
+        {results.map((doc, index) => (
+          <DocumentListItem key={`${doc.documentId}-${index}`} document={doc} />
         ))}
       </List.Section>
       {!isLoading && !hasQuery && (
@@ -29,15 +29,14 @@ export default function Command() {
 }
 
 function DocumentListItem({ document }: { document: DocumentSearchMatch }) {
-  const lastModified = document.metadata?.lastModifiedAt
-    ? new Date(document.metadata.lastModifiedAt).toLocaleDateString()
+  const lastModified = document.lastModifiedAt
+    ? new Date(document.lastModifiedAt).toLocaleDateString()
     : undefined;
 
   return (
     <List.Item
       icon={Icon.Document}
       title={document.markdown || "Untitled"}
-      subtitle={document.documentId}
       accessories={lastModified ? [{ text: lastModified, tooltip: "Last modified" }] : []}
       actions={
         <ActionPanel>

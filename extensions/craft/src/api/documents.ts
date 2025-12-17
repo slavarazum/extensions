@@ -2,14 +2,33 @@
  * Documents Domain
  *
  * Everything related to documents in one place:
- * - Types (params, responses)
+ * - Types
  * - Hooks for React components
  * - Async functions for tools
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, httpGet, httpPost, httpDelete } from "./client";
-import type { Document, DocumentSearchMatch, VirtualLocation } from "./types";
+import { buildUrl } from "./client";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface Document {
+  id: string;
+  title: string;
+  lastModifiedAt?: string;
+  createdAt?: string;
+}
+
+export type VirtualLocation = "unsorted" | "trash" | "templates" | "daily_notes";
+
+export interface DocumentSearchMatch {
+  documentId: string;
+  markdown: string;
+  lastModifiedAt?: string;
+  createdAt?: string;
+}
 
 // =============================================================================
 // Endpoints
@@ -27,8 +46,12 @@ const ENDPOINTS = {
 
 export interface ListDocumentsParams {
   folderId?: string;
-  virtualLocation?: VirtualLocation;
-  includeMetadata?: boolean;
+  location?: VirtualLocation;
+  fetchMetadata?: boolean;
+  createdDateGte?: string;
+  createdDateLte?: string;
+  lastModifiedDateGte?: string;
+  lastModifiedDateLte?: string;
 }
 
 export interface SearchDocumentsParams {
@@ -49,7 +72,7 @@ export interface SearchDocumentsParams {
 // =============================================================================
 
 interface DocumentsResponse {
-  documents: Document[];
+  items: Document[];
 }
 
 interface SearchDocumentsResponse {
@@ -65,10 +88,14 @@ function documentsUrl(params?: ListDocumentsParams): string {
 }
 
 function searchDocumentsUrl(params: SearchDocumentsParams): string {
-  // Handle array params
+  // Build query params - arrays need special handling
   const flatParams: Record<string, string | boolean | undefined> = {
     fetchMetadata: params.fetchMetadata,
     location: params.location,
+    createdDateGte: params.createdDateGte,
+    createdDateLte: params.createdDateLte,
+    lastModifiedDateGte: params.lastModifiedDateGte,
+    lastModifiedDateLte: params.lastModifiedDateLte,
   };
 
   // include can be string or array
@@ -104,7 +131,7 @@ export function useDocuments(params?: ListDocumentsParams): UseDocumentsResult {
   });
 
   return {
-    documents: data?.documents ?? [],
+    documents: data?.items ?? [],
     isLoading,
     error,
     revalidate,
@@ -135,6 +162,8 @@ export interface UseDocumentSearchResult {
 export function useDocumentSearch(query: string, params?: Omit<SearchDocumentsParams, "include">): UseDocumentSearchResult {
   const hasQuery = query.length > 0;
 
+  console.log(searchDocumentsUrl({ ...params, include: query }))
+
   const { data, isLoading, error, revalidate } = useFetch<SearchDocumentsResponse>(
     searchDocumentsUrl({ ...params, include: query }),
     {
@@ -160,16 +189,20 @@ export function useDocumentSearch(query: string, params?: Omit<SearchDocumentsPa
  * Fetch documents list (for tools)
  */
 export async function fetchDocuments(params?: ListDocumentsParams): Promise<Document[]> {
-  const response = await httpGet<DocumentsResponse>(documentsUrl(params));
-  return response.documents;
+  const response = await fetch(documentsUrl(params));
+  if (!response.ok) throw new Error(`Failed to fetch documents: ${response.statusText}`);
+  const data: DocumentsResponse = await response.json();
+  return data.items;
 }
 
 /**
  * Search documents (for tools)
  */
 export async function searchDocuments(params: SearchDocumentsParams): Promise<DocumentSearchMatch[]> {
-  const response = await httpGet<SearchDocumentsResponse>(searchDocumentsUrl(params));
-  return response.items;
+  const response = await fetch(searchDocumentsUrl(params));
+  if (!response.ok) throw new Error(`Failed to search documents: ${response.statusText}`);
+  const data: SearchDocumentsResponse = await response.json();
+  return data.items;
 }
 
 /**
@@ -179,14 +212,29 @@ export async function createDocument(params: {
   title: string;
   destination?: { destination: "unsorted" | "templates" } | { folderId: string };
 }): Promise<Document> {
-  const response = await httpPost<{ document: Document }>(buildUrl(ENDPOINTS.documents), params);
-  return response.document;
+  const response = await fetch(buildUrl(ENDPOINTS.documents), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      documents: [{ title: params.title }],
+      destination: params.destination,
+    }),
+  });
+  if (!response.ok) throw new Error(`Failed to create document: ${response.statusText}`);
+  const data: { items: Document[] } = await response.json();
+  return data.items[0];
 }
 
 /**
- * Delete documents
+ * Delete documents (moves to trash)
  */
 export async function deleteDocuments(documentIds: string[]): Promise<string[]> {
-  const response = await httpDelete<{ deletedDocumentIds: string[] }>(buildUrl(ENDPOINTS.documents), { documentIds });
-  return response.deletedDocumentIds;
+  const response = await fetch(buildUrl(ENDPOINTS.documents), {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ documentIds }),
+  });
+  if (!response.ok) throw new Error(`Failed to delete documents: ${response.statusText}`);
+  const data: { items: string[] } = await response.json();
+  return data.items;
 }

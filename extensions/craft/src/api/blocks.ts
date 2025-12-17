@@ -2,14 +2,81 @@
  * Blocks Domain
  *
  * Everything related to blocks in one place:
- * - Types (params, responses)
+ * - Types
  * - Hooks for React components
  * - Async functions for tools
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, httpGet, httpPost, httpPut, httpDelete } from "./client";
-import type { Block, BlockPosition, SearchMatch, ListStyle } from "./types";
+import { buildUrl } from "./client";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface BlockMetadata {
+  lastModifiedAt?: string;
+  createdAt?: string;
+  lastModifiedBy?: string;
+  createdBy?: string;
+  comments?: { id: string; author: string; content: string; createdAt: string }[];
+  clickableLink?: string;
+}
+
+export interface TaskInfo {
+  state: "todo" | "done" | "canceled";
+  scheduleDate?: string;
+  deadlineDate?: string;
+  completedAt?: string;
+  canceledAt?: string;
+}
+
+export type BlockType =
+  | "text"
+  | "page"
+  | "image"
+  | "video"
+  | "file"
+  | "drawing"
+  | "whiteboard"
+  | "table"
+  | "collection"
+  | "code"
+  | "richLink"
+  | "line";
+
+export type TextStyle = "card" | "page" | "h1" | "h2" | "h3" | "h4" | "caption" | "body";
+export type ListStyle = "none" | "bullet" | "numbered" | "toggle" | "task";
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  textStyle?: TextStyle;
+  textAlignment?: "left" | "center" | "right" | "justify";
+  font?: "system" | "serif" | "rounded" | "mono";
+  markdown?: string;
+  indentationLevel?: number;
+  listStyle?: ListStyle;
+  decorations?: string[];
+  color?: string;
+  taskInfo?: TaskInfo;
+  metadata?: BlockMetadata;
+  content?: Block[];
+}
+
+export type BlockPosition =
+  | { position: "start" | "end"; pageId: string }
+  | { position: "start" | "end"; date: string }
+  | { siblingId: string; position: "before" | "after" };
+
+export interface SearchMatch {
+  documentId?: string;
+  blockId?: string;
+  markdown: string;
+  pageBlockPath?: { id: string; content: string }[];
+  beforeBlocks?: { blockId: string; markdown: string }[];
+  afterBlocks?: { blockId: string; markdown: string }[];
+}
 
 // =============================================================================
 // Endpoints
@@ -26,11 +93,10 @@ const ENDPOINTS = {
 // =============================================================================
 
 export interface GetBlocksParams {
-  pageId?: string;
-  date?: string; // YYYY-MM-DD for daily notes
-  blockIds?: string[];
-  includeContent?: boolean;
-  includeMetadata?: boolean;
+  id?: string; // Block ID or document ID
+  date?: string; // YYYY-MM-DD for daily notes (mutually exclusive with id)
+  maxDepth?: number; // -1 for all descendants (default)
+  fetchMetadata?: boolean;
 }
 
 export interface SearchBlocksParams {
@@ -51,16 +117,15 @@ export interface InsertBlockParams {
 // Responses
 // =============================================================================
 
-interface BlocksResponse {
-  blocks: Block[];
-}
+// GET /blocks returns a single block (the page) with nested content
+type BlockResponse = Block;
 
 interface SearchBlocksResponse {
-  matches: SearchMatch[];
+  items: SearchMatch[];
 }
 
 interface InsertBlocksResponse {
-  insertedBlocks: Block[];
+  items: Block[];
 }
 
 // =============================================================================
@@ -68,7 +133,7 @@ interface InsertBlocksResponse {
 // =============================================================================
 
 function blocksUrl(params: GetBlocksParams): string {
-  return buildUrl(ENDPOINTS.blocks, params as unknown as Record<string, string | boolean | undefined>);
+  return buildUrl(ENDPOINTS.blocks, params as unknown as Record<string, string | number | boolean | undefined>);
 }
 
 function searchBlocksUrl(params: SearchBlocksParams): string {
@@ -92,22 +157,25 @@ export interface UseBlocksResult {
  * @example
  * ```tsx
  * // By document ID
- * const { blocks, isLoading } = useBlocks({ pageId: documentId });
+ * const { blocks, isLoading } = useBlocks({ id: documentId });
  *
  * // By date (daily note)
  * const { blocks } = useBlocks({ date: "2024-01-15" });
  * ```
  */
 export function useBlocks(params: GetBlocksParams): UseBlocksResult {
-  const hasTarget = Boolean(params.pageId || params.date || params.blockIds?.length);
+  const hasTarget = Boolean(params.id || params.date);
 
-  const { data, isLoading, error, revalidate } = useFetch<BlocksResponse>(blocksUrl(params), {
+  const { data, isLoading, error, revalidate } = useFetch<BlockResponse>(blocksUrl(params), {
     execute: hasTarget,
     keepPreviousData: true,
   });
 
+  // API returns single block with nested content array
+  const blocks = data?.content ?? (data ? [data] : []);
+
   return {
-    blocks: data?.blocks ?? [],
+    blocks,
     isLoading: hasTarget ? isLoading : false,
     error,
     revalidate,
@@ -157,7 +225,7 @@ export function useBlockSearch(
   );
 
   return {
-    matches: data?.matches ?? [],
+    matches: data?.items ?? [],
     isLoading: shouldExecute ? isLoading : false,
     hasPattern,
     error,
@@ -192,7 +260,6 @@ export function useDailyNote(date?: string): UseDailyNoteResult {
 
   const { blocks, isLoading, error, revalidate } = useBlocks({
     date: targetDate,
-    includeContent: true,
   });
 
   const addContent = async (content: string, listStyle?: ListStyle): Promise<Block[]> => {
@@ -223,33 +290,44 @@ export function useDailyNote(date?: string): UseDailyNoteResult {
  * Fetch blocks (for tools)
  */
 export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
-  const response = await httpGet<BlocksResponse>(blocksUrl(params));
-  return response.blocks;
+  const response = await fetch(blocksUrl(params));
+  if (!response.ok) throw new Error(`Failed to fetch blocks: ${response.statusText}`);
+  const data: BlockResponse = await response.json();
+  // API returns single block with nested content array
+  return data.content ?? [data];
 }
 
 /**
  * Search blocks (for tools)
  */
 export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMatch[]> {
-  const response = await httpGet<SearchBlocksResponse>(searchBlocksUrl(params));
-  return response.matches;
+  const response = await fetch(searchBlocksUrl(params));
+  if (!response.ok) throw new Error(`Failed to search blocks: ${response.statusText}`);
+  const data: SearchBlocksResponse = await response.json();
+  return data.items;
 }
 
 /**
  * Insert a block
  */
 export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
-  const response = await httpPost<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
-    blocks: [
-      {
-        type: "text",
-        markdown: params.content,
-        listStyle: params.listStyle ?? "none",
-      },
-    ],
-    position: params.position,
+  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      blocks: [
+        {
+          type: "text",
+          markdown: params.content,
+          listStyle: params.listStyle ?? "none",
+        },
+      ],
+      position: params.position,
+    }),
   });
-  return response.insertedBlocks;
+  if (!response.ok) throw new Error(`Failed to insert block: ${response.statusText}`);
+  const data: InsertBlocksResponse = await response.json();
+  return data.items;
 }
 
 /**
@@ -259,37 +337,42 @@ export async function insertBlocks(
   blocks: Partial<Block>[],
   position: BlockPosition,
 ): Promise<Block[]> {
-  const response = await httpPost<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
-    blocks,
-    position,
+  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ blocks, position }),
   });
-  return response.insertedBlocks;
+  if (!response.ok) throw new Error(`Failed to insert blocks: ${response.statusText}`);
+  const data: InsertBlocksResponse = await response.json();
+  return data.items;
 }
 
 /**
  * Update blocks
  */
 export async function updateBlocks(
-  updates: { id: string; updates: Partial<Block> }[],
-  target?: { pageId?: string; date?: string },
+  updates: { id: string; markdown?: string; taskInfo?: Partial<TaskInfo> }[],
 ): Promise<Block[]> {
-  const response = await httpPut<{ updatedBlocks: Block[] }>(buildUrl(ENDPOINTS.blocks), {
-    ...target,
-    blocks: updates,
+  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ blocks: updates }),
   });
-  return response.updatedBlocks;
+  if (!response.ok) throw new Error(`Failed to update blocks: ${response.statusText}`);
+  const data: { items: Block[] } = await response.json();
+  return data.items;
 }
 
 /**
  * Delete blocks
  */
-export async function deleteBlocks(
-  blockIds: string[],
-  target?: { pageId?: string; date?: string },
-): Promise<string[]> {
-  const response = await httpDelete<{ deletedBlockIds: string[] }>(buildUrl(ENDPOINTS.blocks), {
-    ...target,
-    blockIds,
+export async function deleteBlocks(blockIds: string[]): Promise<string[]> {
+  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ blockIds }),
   });
-  return response.deletedBlockIds;
+  if (!response.ok) throw new Error(`Failed to delete blocks: ${response.statusText}`);
+  const data: { items: { id: string }[] } = await response.json();
+  return data.items.map((item) => item.id);
 }

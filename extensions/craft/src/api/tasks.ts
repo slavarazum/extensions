@@ -2,14 +2,27 @@
  * Tasks Domain
  *
  * Everything related to tasks in one place:
- * - Types (params, responses)
+ * - Types
  * - Hook for React components
  * - Async functions for tools
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, httpGet, httpPost, httpPut, httpDelete } from "./client";
-import type { Task, TaskScope } from "./types";
+import { buildUrl } from "./client";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface Task {
+  id: string;
+  markdown: string;
+  state: "todo" | "done" | "canceled";
+  scheduleDate?: string;
+  deadlineDate?: string;
+}
+
+export type TaskScope = "active" | "upcoming" | "inbox" | "logbook" | "document";
 
 // =============================================================================
 // Endpoint
@@ -24,25 +37,24 @@ const ENDPOINT = "/tasks";
 export interface TasksParams {
   scope?: TaskScope;
   documentId?: string;
-  date?: string;
 }
 
 interface TasksResponse {
-  tasks: Task[];
+  items: Task[];
 }
 
-interface UpdateTaskPayload {
+interface TaskUpdateInfo {
   state?: "todo" | "done" | "canceled";
   scheduleDate?: string;
   deadlineDate?: string;
 }
 
 interface UpdateTasksResponse {
-  updatedTasks: Task[];
+  items: Task[];
 }
 
 interface DeleteTasksResponse {
-  deletedTaskIds: string[];
+  items: string[];
 }
 
 // =============================================================================
@@ -78,7 +90,7 @@ export function useTasks(params?: TasksParams): UseTasksResult {
   });
 
   return {
-    tasks: data?.tasks ?? [],
+    tasks: data?.items ?? [],
     isLoading,
     error,
     revalidate,
@@ -93,7 +105,7 @@ export interface TaskActions {
   complete: (taskId: string) => Promise<void>;
   reopen: (taskId: string) => Promise<void>;
   cancel: (taskId: string) => Promise<void>;
-  update: (taskId: string, updates: UpdateTaskPayload) => Promise<void>;
+  update: (taskId: string, updates: TaskUpdateInfo) => Promise<void>;
   remove: (taskId: string) => Promise<void>;
 }
 
@@ -129,24 +141,32 @@ export function useTaskActions(): TaskActions {
  * Fetch tasks (for tools/non-React code)
  */
 export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
-  const response = await httpGet<TasksResponse>(tasksUrl(params));
-  return response.tasks;
+  const response = await fetch(tasksUrl(params));
+  if (!response.ok) throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+  const data: TasksResponse = await response.json();
+  return data.items;
 }
 
 /**
  * Update a task's state or dates
  */
-export async function updateTask(taskId: string, updates: UpdateTaskPayload): Promise<void> {
-  await httpPut<UpdateTasksResponse>(buildUrl(ENDPOINT), {
-    tasks: [{ blockId: taskId, updates }],
+export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promise<void> {
+  const response = await fetch(buildUrl(ENDPOINT), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tasksToUpdate: [{ id: taskId, taskInfo: updates }] }),
   });
+  if (!response.ok) throw new Error(`Failed to update task: ${response.statusText}`);
 }
 
 /**
  * Delete a task
  */
 export async function deleteTask(taskId: string): Promise<void> {
-  await httpDelete<DeleteTasksResponse>(buildUrl(ENDPOINT), {
-    blockIds: [taskId],
+  const response = await fetch(buildUrl(ENDPOINT), {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idsToDelete: [taskId] }),
   });
+  if (!response.ok) throw new Error(`Failed to delete task: ${response.statusText}`);
 }
