@@ -6,7 +6,7 @@
  */
 
 // Client utilities (shared across domains)
-export { getDocumentsApiUrl, getDailyNotesAndTasksApiUrl, useSpaceId } from "./client";
+export { getDocumentsApiUrl, getDailyNotesAndTasksApiUrl } from "./client";
 
 // Tasks domain
 export {
