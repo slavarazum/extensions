@@ -63,6 +63,24 @@
       "description": ""
     }
   ],
+  "preferences": [
+    {
+      "name": "documentsApiUrl",
+      "title": "Documents API URL",
+      "description": "Your Craft Documents API URL. Get it from Craft Settings > API Access.",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
+    },
+    {
+      "name": "dailyNotesAndTasksApiUrl",
+      "title": "Daily Notes & Tasks API URL",
+      "description": "Your Craft Daily Notes & Tasks API URL. Get it from Craft Settings > API Access.",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.103.10",
     "@raycast/utils": "^1.17.0"
