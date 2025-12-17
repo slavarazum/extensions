@@ -19,6 +19,7 @@ export interface Document {
   title: string;
   lastModifiedAt?: string;
   createdAt?: string;
+  clickableLink?: string;
 }
 
 export type VirtualLocation = "unsorted" | "trash" | "templates" | "daily_notes";

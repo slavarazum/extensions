@@ -1,23 +1,20 @@
 import { ActionPanel, Action, List, Icon } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { useDocumentSearch, useDocuments, useSpaceId, type DocumentSearchMatch } from "./api";
+import { useDocumentSearch, useDocuments, type DocumentSearchMatch, type Document } from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
   const { results, isLoading, hasQuery } = useDocumentSearch(searchText, { fetchMetadata: true });
 
-  // Fetch all documents to get their titles (only when searching)
-  const { documents, isLoading: isLoadingDocuments } = useDocuments(undefined, { execute: hasQuery });
+  // Fetch all documents to get their titles and clickable links (only when searching)
+  const { documents, isLoading: isLoadingDocuments } = useDocuments({ fetchMetadata: true }, { execute: hasQuery });
 
-  // Fetch space ID for deep links (workaround via API)
-  const { spaceId, isLoading: isLoadingSpaceId } = useSpaceId();
-
-  // Create a map of document ID to title
-  const documentTitles = useMemo(() => {
-    const map = new Map<string, string>();
+  // Create a map of document ID to document info
+  const documentMap = useMemo(() => {
+    const map = new Map<string, Document>();
 
     for (const doc of documents) {
-      map.set(doc.id, doc.title);
+      map.set(doc.id, doc);
     }
 
     return map;
@@ -25,20 +22,22 @@ export default function Command() {
 
   return (
     <List
-      isLoading={isLoading || isLoadingDocuments || isLoadingSpaceId}
+      isLoading={isLoading || isLoadingDocuments}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search Craft documents..."
       throttle
     >
       <List.Section title="Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
-        {results.map((doc, index) => (
-          <DocumentListItem
-            key={`${doc.documentId}-${index}`}
-            document={doc}
-            documentTitle={documentTitles.get(doc.documentId)}
-            spaceId={spaceId}
-          />
-        ))}
+        {results.map((doc, index) => {
+          const docInfo = documentMap.get(doc.documentId);
+          return (
+            <DocumentListItem
+              key={`${doc.documentId}-${index}`}
+              searchMatch={doc}
+              document={docInfo}
+            />
+          );
+        })}
       </List.Section>
       {!isLoading && !hasQuery && (
         <List.EmptyView icon={Icon.MagnifyingGlass} title="Start typing to search documents" />
@@ -102,27 +101,29 @@ function formatSnippet(markdown: string, maxLength = 80): string {
   return result;
 }
 
-function DocumentListItem({ document, documentTitle, spaceId }: { document: DocumentSearchMatch; documentTitle?: string; spaceId?: string }) {
-  const lastModified = document.lastModifiedAt
-    ? new Date(document.lastModifiedAt).toLocaleDateString()
+function DocumentListItem({ searchMatch, document }: { searchMatch: DocumentSearchMatch; document?: Document }) {
+  const lastModified = searchMatch.lastModifiedAt
+    ? new Date(searchMatch.lastModifiedAt).toLocaleDateString()
     : undefined;
 
-  const snippet = formatSnippet(document.markdown || "");
+  const snippet = formatSnippet(searchMatch.markdown || "");
 
   return (
     <List.Item
       icon={Icon.Document}
       title={snippet || "Untitled"}
-      subtitle={documentTitle}
+      subtitle={document?.title}
       accessories={lastModified ? [{ text: lastModified, tooltip: "Last modified" }] : []}
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <Action.OpenInBrowser
-              title="Open in Craft"
-              url={`craftdocs://open?spaceId=${spaceId}&blockId=${document.documentId}`}
-            />
-            <Action.CopyToClipboard title="Copy Document ID" content={document.documentId} />
+            {document?.clickableLink && (
+              <Action.OpenInBrowser
+                title="Open in Craft"
+                url={document.clickableLink}
+              />
+            )}
+            <Action.CopyToClipboard title="Copy Document ID" content={searchMatch.documentId} />
           </ActionPanel.Section>
         </ActionPanel>
       }
