@@ -4,21 +4,43 @@
  * Configuration and utilities for Craft Connect API.
  */
 
+import { getPreferenceValues } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface Preferences {
+  documentsApiUrl?: string;
+  dailyNotesAndTasksApiUrl?: string;
+}
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
-// Craft Connect API endpoints
-// Full Space API - access to all documents, folders, blocks, tasks
-export const CRAFT_SPACE_API = "https://connect.craft.do/links/CbwiyeDAUMD/api/v1";
+/**
+ * Get the Documents API URL from user preferences.
+ */
+export function getDocumentsApiUrl(): string {
+  const preferences = getPreferenceValues<Preferences>();
+  if (!preferences.documentsApiUrl) {
+    throw new Error("Please configure the Documents API URL in extension preferences.");
+  }
+  return preferences.documentsApiUrl;
+}
 
-// Daily Notes API - focused on daily notes and tasks
-export const CRAFT_DAILY_NOTES_API = "https://connect.craft.do/links/6fYEq6cozne/api/v1";
-
-// Default to Full Space API for general operations
-export const API_BASE_URL = CRAFT_SPACE_API;
+/**
+ * Get the Daily Notes & Tasks API URL from user preferences.
+ */
+export function getDailyNotesAndTasksApiUrl(): string {
+  const preferences = getPreferenceValues<Preferences>();
+  if (!preferences.dailyNotesAndTasksApiUrl) {
+    throw new Error("Please configure the Daily Notes & Tasks API URL in extension preferences.");
+  }
+  return preferences.dailyNotesAndTasksApiUrl;
+}
 
 // =============================================================================
 // Space ID
@@ -46,8 +68,10 @@ interface DailyNoteNotFoundError {
  * that includes the spaceId in the error response details.
  */
 export function useSpaceId(): { spaceId: string | undefined; isLoading: boolean } {
+  const apiUrl = getDocumentsApiUrl();
+
   const { data, isLoading } = useFetch<DailyNoteNotFoundError>(
-    `${API_BASE_URL}/blocks?date=tomorrow`,
+    `${apiUrl}/blocks?date=tomorrow`,
     {
       // We expect a 404 response, so parse it as JSON
       async parseResponse(response) {
@@ -68,8 +92,13 @@ export function useSpaceId(): { spaceId: string | undefined; isLoading: boolean 
 
 type QueryValue = string | number | boolean | string[] | undefined;
 
+/**
+ * Build a full API URL with query parameters.
+ * Uses the Documents API URL from preferences by default.
+ */
 export function buildUrl(endpoint: string, params?: Record<string, QueryValue>): string {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getDocumentsApiUrl();
+  const url = `${baseUrl}${endpoint}`;
 
   if (!params) return url;
 
