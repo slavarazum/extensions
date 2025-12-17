@@ -1,6 +1,6 @@
 import { ActionPanel, Action, List, Icon } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { useDocumentSearch, useDocuments, type DocumentSearchMatch } from "./api";
+import { useDocumentSearch, useDocuments, useSpaceId, type DocumentSearchMatch } from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -8,6 +8,9 @@ export default function Command() {
 
   // Fetch all documents to get their titles
   const { documents, isLoading: isLoadingDocuments } = useDocuments();
+
+  // Fetch space ID for deep links (workaround via API)
+  const { spaceId, isLoading: isLoadingSpaceId } = useSpaceId();
 
   // Create a map of document ID to title
   const documentTitles = useMemo(() => {
@@ -22,7 +25,7 @@ export default function Command() {
 
   return (
     <List
-      isLoading={isLoading || isLoadingDocuments}
+      isLoading={isLoading || isLoadingDocuments || isLoadingSpaceId}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search Craft documents..."
       throttle
@@ -33,6 +36,7 @@ export default function Command() {
             key={`${doc.documentId}-${index}`}
             document={doc}
             documentTitle={documentTitles.get(doc.documentId)}
+            spaceId={spaceId}
           />
         ))}
       </List.Section>
@@ -98,7 +102,7 @@ function formatSnippet(markdown: string, maxLength = 80): string {
   return result;
 }
 
-function DocumentListItem({ document, documentTitle }: { document: DocumentSearchMatch; documentTitle?: string }) {
+function DocumentListItem({ document, documentTitle, spaceId }: { document: DocumentSearchMatch; documentTitle?: string; spaceId?: string }) {
   const lastModified = document.lastModifiedAt
     ? new Date(document.lastModifiedAt).toLocaleDateString()
     : undefined;
@@ -116,7 +120,10 @@ function DocumentListItem({ document, documentTitle }: { document: DocumentSearc
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            <Action.OpenInBrowser title="Open in Craft" url={`craftdocs://open?blockId=${document.documentId}`} />
+            <Action.OpenInBrowser
+              title="Open in Craft"
+              url={`craftdocs://open?spaceId=${spaceId}&blockId=${document.documentId}`}
+            />
             <Action.CopyToClipboard title="Copy Document ID" content={document.documentId} />
           </ActionPanel.Section>
         </ActionPanel>
