@@ -1,6 +1,6 @@
 import { ActionPanel, Action, List, Icon, open, Detail } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { useDocumentSearch, useDocuments, useRecentDocuments, useBlocks, searchBlocks, type DocumentSearchMatch, type Document } from "./api";
+import { useDocumentSearch, useDocuments, useRecentDocuments, useBlocks, searchBlocks, appendBlockId, type DocumentSearchMatch, type Document } from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -179,8 +179,7 @@ function SearchResultItem({
       });
 
       if (matchingBlock?.blockId) {
-        const separator = document.clickableLink.includes("?") ? "&" : "?";
-        openUrl = `${document.clickableLink}${separator}blockId=${matchingBlock.blockId}`;
+        openUrl = appendBlockId(document.clickableLink, matchingBlock.blockId);
       }
     } catch {
       // If block search fails, open without blockId

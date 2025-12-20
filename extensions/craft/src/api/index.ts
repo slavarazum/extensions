@@ -82,3 +82,18 @@ export {
   updateBlocks,
   deleteBlocks,
 } from "./blocks";
+
+// Deep links
+export {
+  // Types
+  type OpenLinkParams,
+  type SearchLinkParams,
+  // Link builders
+  openLink,
+  blockLink,
+  documentLink,
+  appendBlockId,
+  searchLink,
+  newDocumentLink,
+  dailyNoteLink,
+} from "./links";
