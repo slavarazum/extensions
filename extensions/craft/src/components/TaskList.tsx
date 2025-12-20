@@ -1,19 +1,65 @@
 import { ActionPanel, Action, List, Icon, Toast, showToast } from "@raycast/api";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { showFailureToast } from "@raycast/utils";
 import { useTasks, useTaskActions, useTaskHandlers, type Task, type TaskScope } from "../api";
 import { TaskListItem } from "./TaskListItem";
 import { CreateTaskForm } from "./CreateTaskForm";
 
-const SCOPE_CONFIG: Record<TaskScope, { title: string; icon: Icon; description: string }> = {
-  active: { title: "Active", icon: Icon.Clock, description: "No active tasks" },
-  upcoming: { title: "Upcoming", icon: Icon.Calendar, description: "No upcoming tasks found" },
+/** Extended scope type that includes "today" for grouped view */
+type ViewScope = TaskScope | "today";
+
+const SCOPE_CONFIG: Record<ViewScope, { title: string; icon: Icon; description: string; apiScope?: TaskScope }> = {
   inbox: { title: "Inbox", icon: Icon.Tray, description: "No inbox tasks found" },
+  today: { title: "Today", icon: Icon.Sun, description: "No tasks for today", apiScope: "active" },
+  upcoming: { title: "Upcoming", icon: Icon.Calendar, description: "No upcoming tasks found" },
+  active: { title: "All", icon: Icon.List, description: "No active tasks" },
   logbook: { title: "Logbook", icon: Icon.CheckCircle, description: "No completed or canceled tasks found" },
   document: { title: "Document", icon: Icon.Document, description: "No document tasks found" },
 };
 
-const SCOPE_OPTIONS: TaskScope[] = ["active", "upcoming", "inbox", "logbook"];
+const SCOPE_OPTIONS: ViewScope[] = ["inbox", "today", "upcoming", "active"];
+
+/**
+ * Group tasks by their location
+ */
+function groupTasksByLocation(tasks: Task[]): Map<string, Task[]> {
+  const groups = new Map<string, Task[]>();
+
+  for (const task of tasks) {
+    const locationType = task.location?.type || "inbox";
+    const locationTitle = task.location?.title;
+
+    let groupKey: string;
+    if (locationType === "document" && locationTitle) {
+      groupKey = locationTitle;
+    } else if (locationType === "dailyNote") {
+      groupKey = "Daily Note";
+    } else {
+      groupKey = "Inbox";
+    }
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, []);
+    }
+    groups.get(groupKey)!.push(task);
+  }
+
+  return groups;
+}
+
+/**
+ * Sort groups: Inbox first, then Daily Note, then documents alphabetically
+ */
+function sortGroups(groups: Map<string, Task[]>): [string, Task[]][] {
+  const entries = Array.from(groups.entries());
+  return entries.sort(([a], [b]) => {
+    if (a === "Inbox") return -1;
+    if (b === "Inbox") return 1;
+    if (a === "Daily Note") return -1;
+    if (b === "Daily Note") return 1;
+    return a.localeCompare(b);
+  });
+}
 
 /** Delay before removing completed task from list (ms) */
 const COMPLETE_ANIMATION_DELAY = 3000;
@@ -24,7 +70,7 @@ export interface TaskListProps {
   /** Show scope dropdown - renders list with scope switcher */
   showScopeDropdown?: boolean;
   /** Default scope when using dropdown */
-  defaultScope?: TaskScope;
+  defaultScope?: ViewScope;
   /** Enable task creation */
   allowCreate?: boolean;
   /** Enable cancel/delete actions */
@@ -34,20 +80,30 @@ export interface TaskListProps {
 export function TaskList({
   scope: fixedScope,
   showScopeDropdown = false,
-  defaultScope = "active",
+  defaultScope = "inbox",
   allowCreate = false,
   allowMutations = false,
 }: TaskListProps) {
-  const [dynamicScope, setDynamicScope] = useState<TaskScope>(defaultScope);
+  const [dynamicScope, setDynamicScope] = useState<ViewScope>(defaultScope);
   // Track completing tasks - use object for reliable React state updates + ref for persistence
   const [completingTasks, setCompletingTasks] = useState<Record<string, boolean>>({});
   const completingTasksRef = useRef<Record<string, boolean>>({});
-  const scope = fixedScope ?? dynamicScope;
-  const config = SCOPE_CONFIG[scope];
 
-  const { tasks, isLoading, revalidate } = useTasks({ scope });
+  // Determine the view scope and API scope
+  const viewScope: ViewScope = fixedScope ?? dynamicScope;
+  const apiScope: TaskScope = SCOPE_CONFIG[viewScope].apiScope ?? (viewScope as TaskScope);
+  const config = SCOPE_CONFIG[viewScope];
+  const isGroupedView = viewScope === "today";
+
+  const { tasks, isLoading, revalidate } = useTasks({ scope: apiScope });
   const actions = useTaskActions();
   const { handleReopen, handleCancel, handleDelete } = useTaskHandlers(revalidate);
+
+  // Group tasks for "today" view
+  const groupedTasks = useMemo(() => {
+    if (!isGroupedView) return null;
+    return sortGroups(groupTasksByLocation(tasks));
+  }, [tasks, isGroupedView]);
 
   // Check if a task is completing (use ref for immediate access, state for re-renders)
   const isTaskCompleting = useCallback((taskId: string) => {
@@ -106,7 +162,7 @@ export function TaskList({
       searchBarPlaceholder={`Filter ${config.title.toLowerCase()} tasks...`}
       searchBarAccessory={
         showScopeDropdown ? (
-          <List.Dropdown tooltip="Task Scope" value={scope} onChange={(value) => setDynamicScope(value as TaskScope)}>
+          <List.Dropdown tooltip="Task Scope" value={viewScope} onChange={(value) => setDynamicScope(value as ViewScope)}>
             {SCOPE_OPTIONS.map((s) => (
               <List.Dropdown.Item key={s} title={SCOPE_CONFIG[s].title} value={s} icon={SCOPE_CONFIG[s].icon} />
             ))}
@@ -115,21 +171,43 @@ export function TaskList({
       }
       actions={createAction ? <ActionPanel>{createAction}</ActionPanel> : undefined}
     >
-      <List.Section title={`${config.title} Tasks`} subtitle={`${tasks.length}`}>
-        {tasks.map((task) => (
-          <TaskListItem
-            key={task.id}
-            task={task}
-            onComplete={() => handleCompleteWithAnimation(task)}
-            onReopen={() => handleReopen(task)}
-            onCancel={allowMutations ? () => handleCancel(task) : undefined}
-            onDelete={allowMutations ? () => handleDelete(task) : undefined}
-            onRefresh={revalidate}
-            extraActions={createAction}
-            isCompleting={isTaskCompleting(task.id)}
-          />
-        ))}
-      </List.Section>
+      {isGroupedView && groupedTasks ? (
+        // Grouped view for "today"
+        groupedTasks.map(([groupKey, groupTasks]) => (
+          <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
+            {groupTasks.map((task) => (
+              <TaskListItem
+                key={task.id}
+                task={task}
+                onComplete={() => handleCompleteWithAnimation(task)}
+                onReopen={() => handleReopen(task)}
+                onCancel={allowMutations ? () => handleCancel(task) : undefined}
+                onDelete={allowMutations ? () => handleDelete(task) : undefined}
+                onRefresh={revalidate}
+                extraActions={createAction}
+                isCompleting={isTaskCompleting(task.id)}
+              />
+            ))}
+          </List.Section>
+        ))
+      ) : (
+        // Flat list view for other scopes
+        <List.Section title={`${config.title} Tasks`} subtitle={`${tasks.length}`}>
+          {tasks.map((task) => (
+            <TaskListItem
+              key={task.id}
+              task={task}
+              onComplete={() => handleCompleteWithAnimation(task)}
+              onReopen={() => handleReopen(task)}
+              onCancel={allowMutations ? () => handleCancel(task) : undefined}
+              onDelete={allowMutations ? () => handleDelete(task) : undefined}
+              onRefresh={revalidate}
+              extraActions={createAction}
+              isCompleting={isTaskCompleting(task.id)}
+            />
+          ))}
+        </List.Section>
+      )}
       {!isLoading && tasks.length === 0 && (
         <List.EmptyView
           icon={config.icon}

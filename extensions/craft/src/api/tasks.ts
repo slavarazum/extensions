@@ -126,8 +126,11 @@ export function useTasks(params?: TasksParams): UseTasksResult {
     keepPreviousData: true,
   });
 
+  // Reverse to match Craft app display order (API returns oldest first, Craft shows newest first)
+  const tasks = data?.items ? [...data.items].reverse() : [];
+
   return {
-    tasks: data?.items ?? [],
+    tasks,
     isLoading,
     error,
     revalidate,
@@ -245,7 +248,8 @@ export function useTaskHandlers(revalidate: () => void): TaskHandlers {
  */
 export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
   const data = await fetch<TasksResponse>(tasksUrl(params));
-  return data.items;
+  // Reverse to match Craft app display order
+  return [...data.items].reverse();
 }
 
 /**
