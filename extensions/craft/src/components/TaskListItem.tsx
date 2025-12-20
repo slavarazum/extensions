@@ -88,6 +88,7 @@ export function TaskListItem({
 
 function buildAccessories(task: Task): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
+  const today = new Date().toISOString().split("T")[0];
 
   // Add location info
   if (task.location?.title) {
@@ -96,9 +97,19 @@ function buildAccessories(task: Task): List.Item.Accessory[] {
     accessories.push({ tag: { value: "Inbox", color: Color.Blue }, tooltip: "Location" });
   }
 
-  // Add schedule date
+  // Add schedule date (red if overdue)
   if (task.taskInfo.scheduleDate) {
-    accessories.push({ date: new Date(task.taskInfo.scheduleDate), tooltip: "Scheduled" });
+    const isOverdue = task.taskInfo.state === "todo" && task.taskInfo.scheduleDate < today;
+    if (isOverdue) {
+      const overdueDate = new Date(task.taskInfo.scheduleDate);
+      const formatted = overdueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      accessories.push({
+        tag: { value: formatted, color: Color.Red },
+        tooltip: "Overdue",
+      });
+    } else {
+      accessories.push({ date: new Date(task.taskInfo.scheduleDate), tooltip: "Scheduled" });
+    }
   }
 
   // Add deadline
