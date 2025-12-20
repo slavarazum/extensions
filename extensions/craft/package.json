@@ -22,27 +22,15 @@
       "mode": "view"
     },
     {
-      "name": "search-blocks",
-      "title": "Search Blocks",
-      "description": "Search content within blocks across documents or in a specific document",
-      "mode": "view"
-    },
-    {
-      "name": "get-blocks",
-      "title": "Get Blocks",
-      "description": "",
-      "mode": "view"
-    },
-    {
       "name": "add-to-daily-note",
       "title": "Add to Daily Note",
-      "description": "",
+      "description": "Add content to your daily note",
       "mode": "view"
     },
     {
       "name": "get-tasks",
       "title": "Get Tasks",
-      "description": "",
+      "description": "Manage and interact with tasks",
       "mode": "view"
     }
   ],
@@ -60,7 +48,7 @@
     {
       "name": "use-tasks",
       "title": "Use Tasks",
-      "description": ""
+      "description": "Manage and interact with"
     }
   ],
   "preferences": [
