@@ -53,6 +53,13 @@ type QueryValue = string | number | boolean | string[] | undefined;
  */
 export function buildUrl(endpoint: string, params?: Record<string, QueryValue>): string {
   const baseUrl = getDocumentsApiUrl();
+  return buildUrlWithBase(baseUrl, endpoint, params);
+}
+
+/**
+ * Internal helper to build URL with given base.
+ */
+function buildUrlWithBase(baseUrl: string, endpoint: string, params?: Record<string, QueryValue>): string {
   const url = `${baseUrl}${endpoint}`;
 
   if (!params) return url;

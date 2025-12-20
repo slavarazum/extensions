@@ -106,9 +106,12 @@ export function TaskList({
   }, [tasks, isGroupedView]);
 
   // Check if a task is completing (use ref for immediate access, state for re-renders)
-  const isTaskCompleting = useCallback((taskId: string) => {
-    return completingTasksRef.current[taskId] || completingTasks[taskId];
-  }, [completingTasks]);
+  const isTaskCompleting = useCallback(
+    (taskId: string) => {
+      return completingTasksRef.current[taskId] || completingTasks[taskId];
+    },
+    [completingTasks],
+  );
 
   // Wrap handleComplete to show animation before removing
   const handleCompleteWithAnimation = useCallback(
@@ -144,7 +147,7 @@ export function TaskList({
         revalidate();
       }, COMPLETE_ANIMATION_DELAY);
     },
-    [actions, revalidate]
+    [actions, revalidate],
   );
 
   const createAction = allowCreate ? (
@@ -162,7 +165,11 @@ export function TaskList({
       searchBarPlaceholder={`Filter ${config.title.toLowerCase()} tasks...`}
       searchBarAccessory={
         showScopeDropdown ? (
-          <List.Dropdown tooltip="Task Scope" value={viewScope} onChange={(value) => setDynamicScope(value as ViewScope)}>
+          <List.Dropdown
+            tooltip="Task Scope"
+            value={viewScope}
+            onChange={(value) => setDynamicScope(value as ViewScope)}
+          >
             {SCOPE_OPTIONS.map((s) => (
               <List.Dropdown.Item key={s} title={SCOPE_CONFIG[s].title} value={s} icon={SCOPE_CONFIG[s].icon} />
             ))}

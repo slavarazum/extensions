@@ -28,6 +28,12 @@
       "mode": "view"
     },
     {
+      "name": "show-daily-notes",
+      "title": "Show Daily Notes",
+      "description": "Browse your daily notes",
+      "mode": "view"
+    },
+    {
       "name": "show-tasks",
       "title": "Show Tasks",
       "description": "Manage and interact with tasks",
@@ -49,6 +55,12 @@
       "name": "logbook-tasks",
       "title": "Logbook Tasks",
       "description": "View completed and canceled tasks",
+      "mode": "view"
+    },
+    {
+      "name": "today-tasks",
+      "title": "Show Today Tasks",
+      "description": "View active tasks grouped by location",
       "mode": "view"
     },
     {
