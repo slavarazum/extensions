@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl } from "./client";
+import { buildUrl, fetch } from "./client";
 
 // =============================================================================
 // Types
@@ -289,9 +289,7 @@ export function useDailyNote(date?: string): UseDailyNoteResult {
  * Fetch blocks (for tools)
  */
 export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
-  const response = await fetch(blocksUrl(params));
-  if (!response.ok) throw new Error(`Failed to fetch blocks: ${response.statusText}`);
-  const data: BlockResponse = await response.json();
+  const data = await fetch<BlockResponse>(blocksUrl(params));
   // API returns single block with nested content array
   return data.content ?? [data];
 }
@@ -300,9 +298,7 @@ export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
  * Search blocks (for tools)
  */
 export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMatch[]> {
-  const response = await fetch(searchBlocksUrl(params));
-  if (!response.ok) throw new Error(`Failed to search blocks: ${response.statusText}`);
-  const data: SearchBlocksResponse = await response.json();
+  const data = await fetch<SearchBlocksResponse>(searchBlocksUrl(params));
   return data.items;
 }
 
@@ -310,9 +306,8 @@ export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMa
  * Insert a block
  */
 export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
-  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       blocks: [
         {
@@ -324,8 +319,6 @@ export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
       position: params.position,
     }),
   });
-  if (!response.ok) throw new Error(`Failed to insert block: ${response.statusText}`);
-  const data: InsertBlocksResponse = await response.json();
   return data.items;
 }
 
@@ -336,13 +329,10 @@ export async function insertBlocks(
   blocks: Partial<Block>[],
   position: BlockPosition,
 ): Promise<Block[]> {
-  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ blocks, position }),
   });
-  if (!response.ok) throw new Error(`Failed to insert blocks: ${response.statusText}`);
-  const data: InsertBlocksResponse = await response.json();
   return data.items;
 }
 
@@ -352,13 +342,10 @@ export async function insertBlocks(
 export async function updateBlocks(
   updates: { id: string; markdown?: string; taskInfo?: Partial<TaskInfo> }[],
 ): Promise<Block[]> {
-  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<{ items: Block[] }>(buildUrl(ENDPOINTS.blocks), {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ blocks: updates }),
   });
-  if (!response.ok) throw new Error(`Failed to update blocks: ${response.statusText}`);
-  const data: { items: Block[] } = await response.json();
   return data.items;
 }
 
@@ -366,12 +353,9 @@ export async function updateBlocks(
  * Delete blocks
  */
 export async function deleteBlocks(blockIds: string[]): Promise<string[]> {
-  const response = await fetch(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<{ items: { id: string }[] }>(buildUrl(ENDPOINTS.blocks), {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ blockIds }),
   });
-  if (!response.ok) throw new Error(`Failed to delete blocks: ${response.statusText}`);
-  const data: { items: { id: string }[] } = await response.json();
   return data.items.map((item) => item.id);
 }

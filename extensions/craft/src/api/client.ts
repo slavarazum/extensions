@@ -74,3 +74,27 @@ export function buildUrl(endpoint: string, params?: Record<string, QueryValue>):
   const queryString = searchParams.toString();
   return queryString ? `${url}?${queryString}` : url;
 }
+
+// =============================================================================
+// HTTP Client
+// =============================================================================
+
+/**
+ * Make a fetch request to the Craft API.
+ * This is a thin wrapper around native fetch for async tool functions.
+ */
+export async function fetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await globalThis.fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Craft API error: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}

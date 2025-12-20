@@ -1,9 +1,6 @@
-import { ActionPanel, Action, List, Icon, open } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, open, Detail } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { usePromise } from "@raycast/utils";
-import { useDocumentSearch, useDocuments, fetchDocuments, searchBlocks, type DocumentSearchMatch, type Document } from "./api";
-
-const PAGE_SIZE = 20;
+import { useDocumentSearch, useDocuments, useRecentDocuments, useBlocks, searchBlocks, type DocumentSearchMatch, type Document } from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -15,41 +12,8 @@ export default function Command() {
     { execute: hasQuery }
   );
 
-  // Fetch documents with pagination support for recent documents view
-  const { isLoading: isLoadingDocuments, data: paginatedDocuments, pagination } = usePromise(
-    () => async (options: { page: number }) => {
-      // Fetch all documents once, then paginate client-side
-      const docs = await fetchDocuments({ fetchMetadata: true });
-
-      // Deduplicate by document ID
-      const seen = new Set<string>();
-      const uniqueDocs = docs.filter((doc) => {
-        if (seen.has(doc.id)) return false;
-        seen.add(doc.id);
-        return true;
-      });
-
-      // Sort by last modified date (most recent first)
-      const sorted = uniqueDocs.sort((a, b) => {
-        const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
-        const dateB = b.lastModifiedAt ? new Date(b.lastModifiedAt).getTime() : 0;
-        return dateB - dateA;
-      });
-
-      // Paginate: return items for current page
-      const startIndex = 0;
-      const endIndex = (options.page + 1) * PAGE_SIZE;
-      const paginatedData = sorted.slice(startIndex, endIndex);
-
-      return {
-        data: paginatedData,
-        hasMore: endIndex < sorted.length,
-      };
-    },
-    []
-  );
-
-  const documents = paginatedDocuments ?? [];
+  // Fetch recent documents (sorted by last modified, deduplicated)
+  const { documents, isLoading: isLoadingDocuments } = useRecentDocuments();
 
   // Create a map of document ID to document info for search results
   const documentMap = useMemo(() => {
@@ -70,7 +34,6 @@ export default function Command() {
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search Craft documents..."
       throttle
-      pagination={hasQuery ? undefined : pagination}
     >
       {hasQuery ? (
         <List.Section title="Search Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
@@ -241,7 +204,17 @@ function SearchResultItem({
                 onAction={handleOpenInApp}
               />
             )}
-            <Action.CopyToClipboard title="Copy Document ID" content={searchMatch.documentId} />
+            <Action.Push
+              title="Show Preview"
+              icon={Icon.Eye}
+              target={<DocumentPreview documentId={searchMatch.documentId} title={document?.title} clickableLink={document?.clickableLink} />}
+              shortcut={{ modifiers: ["cmd"], key: "y" }}
+            />
+            <Action.CopyToClipboard
+              title="Copy Document ID"
+              content={searchMatch.documentId}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            />
           </ActionPanel.Section>
         </ActionPanel>
       }
@@ -267,8 +240,62 @@ function RecentDocumentItem({ document }: { document: Document }) {
                 url={document.clickableLink}
               />
             )}
-            <Action.CopyToClipboard title="Copy Document ID" content={document.id} />
+            <Action.Push
+              title="Show Preview"
+              icon={Icon.Eye}
+              target={<DocumentPreview documentId={document.id} title={document.title} clickableLink={document.clickableLink} />}
+              shortcut={{ modifiers: ["cmd"], key: "y" }}
+            />
+            <Action.CopyToClipboard
+              title="Copy Document ID"
+              content={document.id}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            />
           </ActionPanel.Section>
+        </ActionPanel>
+      }
+    />
+  );
+}
+
+function DocumentPreview({
+  documentId,
+  title,
+  clickableLink,
+}: {
+  documentId: string;
+  title?: string;
+  clickableLink?: string;
+}) {
+  const { isLoading, blocks } = useBlocks({ id: documentId, maxDepth: -1 });
+
+  // Convert blocks to markdown for display
+  const markdown = useMemo(() => {
+    if (isLoading) return "loading document...";
+    if (!blocks || blocks.length === 0) return "No content";
+
+    const renderBlock = (block: { markdown?: string; content?: typeof blocks }): string => {
+      let result = block.markdown || "";
+      if (block.content && block.content.length > 0) {
+        result += "\n" + block.content.map(renderBlock).join("\n");
+      }
+      return result;
+    };
+
+    return blocks.map(renderBlock).join("\n\n");
+  }, [blocks, isLoading]);
+
+  return (
+    <Detail
+      isLoading={isLoading}
+      markdown={markdown}
+      navigationTitle={title || "Document Preview"}
+      actions={
+        <ActionPanel>
+          {clickableLink && (
+            <Action.OpenInBrowser title="Open in App" url={clickableLink} />
+          )}
+          <Action.CopyToClipboard title="Copy Document ID" content={documentId} />
         </ActionPanel>
       }
     />
