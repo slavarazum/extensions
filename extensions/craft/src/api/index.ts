@@ -12,15 +12,22 @@ export { getDocumentsApiUrl, getDailyNotesAndTasksApiUrl } from "./client";
 export {
   // Types
   type Task,
+  type TaskInfo,
+  type TaskLocation,
+  type TaskRepeat,
   type TaskScope,
   type TasksParams,
   type UseTasksResult,
   type TaskActions,
+  type TaskHandlers,
+  type CreateTaskParams,
   // Hooks
   useTasks,
   useTaskActions,
+  useTaskHandlers,
   // Async functions (for tools)
   fetchTasks,
+  createTask,
   updateTask,
   deleteTask,
 } from "./tasks";
@@ -56,7 +63,6 @@ export {
   type BlockPosition,
   type TextStyle,
   type ListStyle,
-  type TaskInfo,
   type SearchMatch,
   type GetBlocksParams,
   type SearchBlocksParams,

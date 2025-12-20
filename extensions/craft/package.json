@@ -28,9 +28,27 @@
       "mode": "view"
     },
     {
-      "name": "get-tasks",
-      "title": "Get Tasks",
+      "name": "show-tasks",
+      "title": "Show Tasks",
       "description": "Manage and interact with tasks",
+      "mode": "view"
+    },
+    {
+      "name": "upcoming-tasks",
+      "title": "Upcoming Tasks",
+      "description": "View upcoming tasks",
+      "mode": "view"
+    },
+    {
+      "name": "inbox-tasks",
+      "title": "Inbox Tasks",
+      "description": "View inbox tasks",
+      "mode": "view"
+    },
+    {
+      "name": "logbook-tasks",
+      "title": "Logbook Tasks",
+      "description": "View completed and canceled tasks",
       "mode": "view"
     }
   ],

@@ -7,19 +7,45 @@
  * - Async functions for tools
  */
 
-import { useFetch } from "@raycast/utils";
-import { buildUrl } from "./client";
+import { Toast, showToast } from "@raycast/api";
+import { useFetch, showFailureToast } from "@raycast/utils";
+import { buildUrl, fetch } from "./client";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface Task {
-  id: string;
-  markdown: string;
+export interface TaskInfo {
   state: "todo" | "done" | "canceled";
   scheduleDate?: string;
   deadlineDate?: string;
+}
+
+export interface TaskLocation {
+  type: "inbox" | "document" | "dailyNote";
+  title?: string; // Document title if type is "document"
+}
+
+export interface TaskRepeat {
+  type: "fixed";
+  frequency: "daily" | "weekly" | "monthly";
+  interval?: number;
+  startDate?: string;
+  daily?: {
+    skipWeekends: boolean;
+  };
+  reminder?: {
+    enabled: boolean;
+    dateOffset: number;
+  };
+}
+
+export interface Task {
+  id: string;
+  markdown: string;
+  taskInfo: TaskInfo;
+  location?: TaskLocation;
+  repeat?: TaskRepeat;
 }
 
 export type TaskScope = "active" | "upcoming" | "inbox" | "logbook" | "document";
@@ -49,12 +75,23 @@ interface TaskUpdateInfo {
   deadlineDate?: string;
 }
 
+export interface CreateTaskParams {
+  markdown: string;
+  taskInfo?: {
+    scheduleDate?: string;
+    deadlineDate?: string;
+  };
+  location: {
+    type: "inbox" | "dailyNote";
+  };
+}
+
 interface UpdateTasksResponse {
   items: Task[];
 }
 
 interface DeleteTasksResponse {
-  items: string[];
+  items: { id: string }[];
 }
 
 // =============================================================================
@@ -134,6 +171,72 @@ export function useTaskActions(): TaskActions {
 }
 
 // =============================================================================
+// Hook: useTaskHandlers
+// =============================================================================
+
+export interface TaskHandlers {
+  handleComplete: (task: Task) => Promise<void>;
+  handleReopen: (task: Task) => Promise<void>;
+  handleCancel: (task: Task) => Promise<void>;
+  handleDelete: (task: Task) => Promise<void>;
+}
+
+/**
+ * Task handlers with toast notifications
+ * Combines useTaskActions with toast feedback and revalidation
+ *
+ * @example
+ * ```tsx
+ * const { tasks, isLoading, revalidate } = useTasks({ scope: "active" });
+ * const handlers = useTaskHandlers(revalidate);
+ *
+ * <TaskListItem task={task} {...handlers} onRefresh={revalidate} />
+ * ```
+ */
+export function useTaskHandlers(revalidate: () => void): TaskHandlers {
+  const actions = useTaskActions();
+
+  return {
+    handleComplete: async (task: Task) => {
+      try {
+        await actions.complete(task.id);
+        await showToast({ style: Toast.Style.Success, title: "Task completed" });
+        revalidate();
+      } catch (error) {
+        showFailureToast(error, { title: "Failed to complete task" });
+      }
+    },
+    handleReopen: async (task: Task) => {
+      try {
+        await actions.reopen(task.id);
+        await showToast({ style: Toast.Style.Success, title: "Task reopened" });
+        revalidate();
+      } catch (error) {
+        showFailureToast(error, { title: "Failed to reopen task" });
+      }
+    },
+    handleCancel: async (task: Task) => {
+      try {
+        await actions.cancel(task.id);
+        await showToast({ style: Toast.Style.Success, title: "Task canceled" });
+        revalidate();
+      } catch (error) {
+        showFailureToast(error, { title: "Failed to cancel task" });
+      }
+    },
+    handleDelete: async (task: Task) => {
+      try {
+        await deleteTask(task.id);
+        await showToast({ style: Toast.Style.Success, title: "Task deleted" });
+        revalidate();
+      } catch (error) {
+        showFailureToast(error, { title: "Failed to delete task" });
+      }
+    },
+  };
+}
+
+// =============================================================================
 // Async Functions (for tools)
 // =============================================================================
 
@@ -141,32 +244,37 @@ export function useTaskActions(): TaskActions {
  * Fetch tasks (for tools/non-React code)
  */
 export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
-  const response = await fetch(tasksUrl(params));
-  if (!response.ok) throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-  const data: TasksResponse = await response.json();
+  const data = await fetch<TasksResponse>(tasksUrl(params));
   return data.items;
+}
+
+/**
+ * Create a new task
+ */
+export async function createTask(task: CreateTaskParams): Promise<Task> {
+  const data = await fetch<{ items: Task[] }>(buildUrl(ENDPOINT), {
+    method: "POST",
+    body: JSON.stringify({ tasks: [task] }),
+  });
+  return data.items[0];
 }
 
 /**
  * Update a task's state or dates
  */
 export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promise<void> {
-  const response = await fetch(buildUrl(ENDPOINT), {
+  await fetch<UpdateTasksResponse>(buildUrl(ENDPOINT), {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tasksToUpdate: [{ id: taskId, taskInfo: updates }] }),
   });
-  if (!response.ok) throw new Error(`Failed to update task: ${response.statusText}`);
 }
 
 /**
  * Delete a task
  */
 export async function deleteTask(taskId: string): Promise<void> {
-  const response = await fetch(buildUrl(ENDPOINT), {
+  await fetch<DeleteTasksResponse>(buildUrl(ENDPOINT), {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idsToDelete: [taskId] }),
   });
-  if (!response.ok) throw new Error(`Failed to delete task: ${response.statusText}`);
 }
