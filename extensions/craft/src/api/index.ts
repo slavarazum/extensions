@@ -35,8 +35,10 @@ export {
   type SearchDocumentsParams,
   type UseDocumentsResult,
   type UseDocumentSearchResult,
+  type UseRecentDocumentsResult,
   // Hooks
   useDocuments,
+  useRecentDocuments,
   useDocumentSearch,
   // Async functions (for tools)
   fetchDocuments,

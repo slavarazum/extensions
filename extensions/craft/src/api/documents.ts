@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl } from "./client";
+import { buildUrl, fetch } from "./client";
 
 // =============================================================================
 // Types
@@ -146,6 +146,59 @@ export function useDocuments(params?: ListDocumentsParams, options?: UseDocument
 }
 
 // =============================================================================
+// Hook: useRecentDocuments
+// =============================================================================
+
+export interface UseRecentDocumentsResult {
+  documents: Document[];
+  isLoading: boolean;
+  error?: Error;
+  revalidate: () => void;
+}
+
+/**
+ * Fetch documents sorted by most recent, with deduplication
+ *
+ * @example
+ * ```tsx
+ * const { documents, isLoading } = useRecentDocuments();
+ * ```
+ */
+export function useRecentDocuments(): UseRecentDocumentsResult {
+  const { data, isLoading, error, revalidate } = useFetch<DocumentsResponse, undefined, Document[]>(
+    documentsUrl({ fetchMetadata: true }),
+    {
+      keepPreviousData: true,
+      mapResult(result: DocumentsResponse) {
+        // Deduplicate by document ID
+        const seen = new Set<string>();
+        const uniqueDocs = result.items.filter((doc) => {
+          if (seen.has(doc.id)) return false;
+          seen.add(doc.id);
+          return true;
+        });
+
+        // Sort by last modified date (most recent first)
+        const sorted = uniqueDocs.sort((a, b) => {
+          const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
+          const dateB = b.lastModifiedAt ? new Date(b.lastModifiedAt).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        return { data: sorted };
+      },
+    }
+  );
+
+  return {
+    documents: data ?? [],
+    isLoading,
+    error,
+    revalidate,
+  };
+}
+
+// =============================================================================
 // Hook: useDocumentSearch
 // =============================================================================
 
@@ -194,9 +247,7 @@ export function useDocumentSearch(query: string, params?: Omit<SearchDocumentsPa
  * Fetch documents list (for tools)
  */
 export async function fetchDocuments(params?: ListDocumentsParams): Promise<Document[]> {
-  const response = await fetch(documentsUrl(params));
-  if (!response.ok) throw new Error(`Failed to fetch documents: ${response.statusText}`);
-  const data: DocumentsResponse = await response.json();
+  const data = await fetch<DocumentsResponse>(documentsUrl(params));
   return data.items;
 }
 
@@ -204,9 +255,7 @@ export async function fetchDocuments(params?: ListDocumentsParams): Promise<Docu
  * Search documents (for tools)
  */
 export async function searchDocuments(params: SearchDocumentsParams): Promise<DocumentSearchMatch[]> {
-  const response = await fetch(searchDocumentsUrl(params));
-  if (!response.ok) throw new Error(`Failed to search documents: ${response.statusText}`);
-  const data: SearchDocumentsResponse = await response.json();
+  const data = await fetch<SearchDocumentsResponse>(searchDocumentsUrl(params));
   return data.items;
 }
 
@@ -217,16 +266,13 @@ export async function createDocument(params: {
   title: string;
   destination?: { destination: "unsorted" | "templates" } | { folderId: string };
 }): Promise<Document> {
-  const response = await fetch(buildUrl(ENDPOINTS.documents), {
+  const data = await fetch<{ items: Document[] }>(buildUrl(ENDPOINTS.documents), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       documents: [{ title: params.title }],
       destination: params.destination,
     }),
   });
-  if (!response.ok) throw new Error(`Failed to create document: ${response.statusText}`);
-  const data: { items: Document[] } = await response.json();
   return data.items[0];
 }
 
@@ -234,12 +280,9 @@ export async function createDocument(params: {
  * Delete documents (moves to trash)
  */
 export async function deleteDocuments(documentIds: string[]): Promise<string[]> {
-  const response = await fetch(buildUrl(ENDPOINTS.documents), {
+  const data = await fetch<{ items: string[] }>(buildUrl(ENDPOINTS.documents), {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ documentIds }),
   });
-  if (!response.ok) throw new Error(`Failed to delete documents: ${response.statusText}`);
-  const data: { items: string[] } = await response.json();
   return data.items;
 }
