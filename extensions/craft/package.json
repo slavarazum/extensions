@@ -50,6 +50,32 @@
       "title": "Logbook Tasks",
       "description": "View completed and canceled tasks",
       "mode": "view"
+    },
+    {
+      "name": "add-task",
+      "title": "Add New Task",
+      "description": "Quickly add a new task to Craft",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "task",
+          "placeholder": "Task",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "schedule",
+          "placeholder": "Schedule (today, tomorrow, 2024-12-25)",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "deadline",
+          "placeholder": "Deadline (today, tomorrow, 2024-12-25)",
+          "type": "text",
+          "required": false
+        }
+      ]
     }
   ],
   "tools": [
