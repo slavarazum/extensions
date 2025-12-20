@@ -1,49 +1,102 @@
 import { ActionPanel, Action, List, Icon, open } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { useDocumentSearch, useDocuments, searchBlocks, type DocumentSearchMatch, type Document } from "./api";
+import { usePromise } from "@raycast/utils";
+import { useDocumentSearch, useDocuments, fetchDocuments, searchBlocks, type DocumentSearchMatch, type Document } from "./api";
+
+const PAGE_SIZE = 20;
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
-  const { results, isLoading, hasQuery } = useDocumentSearch(searchText, { fetchMetadata: true });
+  const { results, isLoading: isSearching, hasQuery } = useDocumentSearch(searchText, { fetchMetadata: true });
 
-  // Fetch all documents to get their titles and clickable links (only when searching)
-  const { documents, isLoading: isLoadingDocuments } = useDocuments({ fetchMetadata: true }, { execute: hasQuery });
+  // Fetch all documents for documentMap when searching (to get clickableLinks)
+  const { documents: allDocsForMap, isLoading: isLoadingAllDocs } = useDocuments(
+    { fetchMetadata: true },
+    { execute: hasQuery }
+  );
 
-  // Create a map of document ID to document info
+  // Fetch documents with pagination support for recent documents view
+  const { isLoading: isLoadingDocuments, data: paginatedDocuments, pagination } = usePromise(
+    () => async (options: { page: number }) => {
+      // Fetch all documents once, then paginate client-side
+      const docs = await fetchDocuments({ fetchMetadata: true });
+
+      // Deduplicate by document ID
+      const seen = new Set<string>();
+      const uniqueDocs = docs.filter((doc) => {
+        if (seen.has(doc.id)) return false;
+        seen.add(doc.id);
+        return true;
+      });
+
+      // Sort by last modified date (most recent first)
+      const sorted = uniqueDocs.sort((a, b) => {
+        const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
+        const dateB = b.lastModifiedAt ? new Date(b.lastModifiedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      // Paginate: return items for current page
+      const startIndex = 0;
+      const endIndex = (options.page + 1) * PAGE_SIZE;
+      const paginatedData = sorted.slice(startIndex, endIndex);
+
+      return {
+        data: paginatedData,
+        hasMore: endIndex < sorted.length,
+      };
+    },
+    []
+  );
+
+  const documents = paginatedDocuments ?? [];
+
+  // Create a map of document ID to document info for search results
   const documentMap = useMemo(() => {
     const map = new Map<string, Document>();
-
-    for (const doc of documents) {
+    // Use allDocsForMap when searching to ensure we have all clickableLinks
+    const docsToMap = hasQuery ? allDocsForMap : documents;
+    for (const doc of docsToMap) {
       map.set(doc.id, doc);
     }
-
     return map;
-  }, [documents]);
+  }, [documents, allDocsForMap, hasQuery]);
+
+  const isLoading = isSearching || (hasQuery ? isLoadingAllDocs : isLoadingDocuments);
 
   return (
     <List
-      isLoading={isLoading || isLoadingDocuments}
+      isLoading={isLoading}
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search Craft documents..."
       throttle
+      pagination={hasQuery ? undefined : pagination}
     >
-      <List.Section title="Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
-        {results.map((doc, index) => {
-          const docInfo = documentMap.get(doc.documentId);
-          return (
-            <DocumentListItem
-              key={`${doc.documentId}-${index}`}
-              searchMatch={doc}
-              document={docInfo}
-              searchText={searchText}
-            />
-          );
-        })}
-      </List.Section>
-      {!isLoading && !hasQuery && (
-        <List.EmptyView icon={Icon.MagnifyingGlass} title="Start typing to search documents" />
+      {hasQuery ? (
+        <List.Section title="Search Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
+          {results.map((doc, index) => {
+            const docInfo = documentMap.get(doc.documentId);
+            return (
+              <SearchResultItem
+                key={`${doc.documentId}-${index}`}
+                searchMatch={doc}
+                document={docInfo}
+                searchText={searchText}
+              />
+            );
+          })}
+        </List.Section>
+      ) : (
+        <List.Section title="Recent Documents" subtitle={documents.length > 0 ? `${documents.length}` : undefined}>
+          {documents.map((doc, index) => (
+            <RecentDocumentItem key={`${doc.id}-${index}`} document={doc} />
+          ))}
+        </List.Section>
       )}
-      {!isLoading && hasQuery && results.length === 0 && (
+      {!isSearching && !isLoadingDocuments && !hasQuery && documents.length === 0 && (
+        <List.EmptyView icon={Icon.Document} title="No documents found" />
+      )}
+      {!isSearching && hasQuery && results.length === 0 && (
         <List.EmptyView icon={Icon.Document} title="No documents found" description="Try a different search term" />
       )}
     </List>
@@ -102,7 +155,7 @@ function formatSnippet(markdown: string, maxLength = 80): string {
   return result;
 }
 
-function DocumentListItem({
+function SearchResultItem({
   searchMatch,
   document,
   searchText,
@@ -175,7 +228,6 @@ function DocumentListItem({
 
   return (
     <List.Item
-      icon={Icon.Document}
       title={snippet || "Untitled"}
       subtitle={document?.title}
       accessories={lastModified ? [{ text: lastModified, tooltip: "Last modified" }] : []}
@@ -190,6 +242,32 @@ function DocumentListItem({
               />
             )}
             <Action.CopyToClipboard title="Copy Document ID" content={searchMatch.documentId} />
+          </ActionPanel.Section>
+        </ActionPanel>
+      }
+    />
+  );
+}
+
+function RecentDocumentItem({ document }: { document: Document }) {
+  const lastModified = document.lastModifiedAt
+    ? new Date(document.lastModifiedAt).toLocaleDateString()
+    : undefined;
+
+  return (
+    <List.Item
+      title={document.title || "Untitled"}
+      accessories={lastModified ? [{ text: lastModified, tooltip: "Last modified" }] : []}
+      actions={
+        <ActionPanel>
+          <ActionPanel.Section>
+            {document.clickableLink && (
+              <Action.OpenInBrowser
+                title="Open in App"
+                url={document.clickableLink}
+              />
+            )}
+            <Action.CopyToClipboard title="Copy Document ID" content={document.id} />
           </ActionPanel.Section>
         </ActionPanel>
       }
