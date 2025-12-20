@@ -40,25 +40,25 @@
       "mode": "view"
     },
     {
-      "name": "upcoming-tasks",
-      "title": "Upcoming Tasks",
+      "name": "show-upcoming-tasks",
+      "title": "Show Upcoming Tasks",
       "description": "View upcoming tasks",
       "mode": "view"
     },
     {
-      "name": "inbox-tasks",
-      "title": "Inbox Tasks",
+      "name": "show-inbox-tasks",
+      "title": "Show Inbox Tasks",
       "description": "View inbox tasks",
       "mode": "view"
     },
     {
-      "name": "logbook-tasks",
-      "title": "Logbook Tasks",
+      "name": "show-logbook-tasks",
+      "title": "Show Logbook Tasks",
       "description": "View completed and canceled tasks",
       "mode": "view"
     },
     {
-      "name": "today-tasks",
+      "name": "show-today-tasks",
       "title": "Show Today Tasks",
       "description": "View active tasks grouped by location",
       "mode": "view"
