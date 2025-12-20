@@ -9,6 +9,8 @@ export interface TaskListItemProps {
   onDelete?: () => void;
   onRefresh: () => void;
   extraActions?: React.ReactNode;
+  /** Show as completing (green checkmark, will be removed) */
+  isCompleting?: boolean;
 }
 
 export function TaskListItem({
@@ -19,8 +21,11 @@ export function TaskListItem({
   onDelete,
   onRefresh,
   extraActions,
+  isCompleting = false,
 }: TaskListItemProps) {
-  const stateIcon = getStateIcon(task.taskInfo.state);
+  const stateIcon = isCompleting
+    ? { source: Icon.CheckCircle, tintColor: Color.Green }
+    : getStateIcon(task.taskInfo.state);
   const accessories = buildAccessories(task);
 
   return (
