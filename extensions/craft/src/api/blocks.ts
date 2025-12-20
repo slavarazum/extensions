@@ -220,7 +220,6 @@ export function useBlockSearch(
     }),
     {
       execute: shouldExecute,
-      keepPreviousData: true,
     },
   );
 

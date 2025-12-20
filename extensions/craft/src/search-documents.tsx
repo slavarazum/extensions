@@ -1,6 +1,6 @@
-import { ActionPanel, Action, List, Icon } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, open } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { useDocumentSearch, useDocuments, type DocumentSearchMatch, type Document } from "./api";
+import { useDocumentSearch, useDocuments, searchBlocks, type DocumentSearchMatch, type Document } from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -35,6 +35,7 @@ export default function Command() {
               key={`${doc.documentId}-${index}`}
               searchMatch={doc}
               document={docInfo}
+              searchText={searchText}
             />
           );
         })}
@@ -101,12 +102,76 @@ function formatSnippet(markdown: string, maxLength = 80): string {
   return result;
 }
 
-function DocumentListItem({ searchMatch, document }: { searchMatch: DocumentSearchMatch; document?: Document }) {
+function DocumentListItem({
+  searchMatch,
+  document,
+  searchText,
+}: {
+  searchMatch: DocumentSearchMatch;
+  document?: Document;
+  searchText: string;
+}) {
   const lastModified = searchMatch.lastModifiedAt
     ? new Date(searchMatch.lastModifiedAt).toLocaleDateString()
     : undefined;
 
   const snippet = formatSnippet(searchMatch.markdown || "");
+
+  /**
+   * Normalize markdown by removing highlight markers and extra whitespace
+   * for better comparison
+   */
+  const normalizeMarkdown = (md: string): string => {
+    return md
+      .replace(/\*\*/g, "") // Remove highlight markers
+      .replace(/\s+/g, " ") // Normalize whitespace
+      .trim()
+      .toLowerCase();
+  };
+
+  // Fetch blockId and open in app
+  const handleOpenInApp = async () => {
+    if (!document?.clickableLink) return;
+
+    let openUrl = document.clickableLink;
+
+    try {
+      // Search within the document to get blockId
+      const blockMatches = await searchBlocks({
+        blockId: searchMatch.documentId,
+        pattern: searchText,
+        beforeBlockCount: 0,
+        afterBlockCount: 0,
+      });
+
+      // Normalize the clicked result's markdown for comparison
+      const normalizedClickedMarkdown = normalizeMarkdown(searchMatch.markdown || "");
+
+      // Find the matching block by comparing normalized markdown content
+      const matchingBlock = blockMatches.find((match) => {
+        if (!match.markdown) return false;
+
+        const normalizedBlockMarkdown = normalizeMarkdown(match.markdown);
+
+        // Check if the block markdown matches the clicked result
+        // Either exact match or one contains the other
+        return (
+          normalizedBlockMarkdown === normalizedClickedMarkdown ||
+          normalizedBlockMarkdown.includes(normalizedClickedMarkdown) ||
+          normalizedClickedMarkdown.includes(normalizedBlockMarkdown)
+        );
+      });
+
+      if (matchingBlock?.blockId) {
+        const separator = document.clickableLink.includes("?") ? "&" : "?";
+        openUrl = `${document.clickableLink}${separator}blockId=${matchingBlock.blockId}`;
+      }
+    } catch {
+      // If block search fails, open without blockId
+    }
+
+    await open(openUrl);
+  };
 
   return (
     <List.Item
@@ -118,9 +183,10 @@ function DocumentListItem({ searchMatch, document }: { searchMatch: DocumentSear
         <ActionPanel>
           <ActionPanel.Section>
             {document?.clickableLink && (
-              <Action.OpenInBrowser
-                title="Open in Craft"
-                url={document.clickableLink}
+              <Action
+                title="Open in App"
+                icon={Icon.ArrowRight}
+                onAction={handleOpenInApp}
               />
             )}
             <Action.CopyToClipboard title="Copy Document ID" content={searchMatch.documentId} />
