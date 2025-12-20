@@ -52,8 +52,7 @@ type QueryValue = string | number | boolean | string[] | undefined;
  * Uses the Documents API URL from preferences by default.
  */
 export function buildUrl(endpoint: string, params?: Record<string, QueryValue>): string {
-  const baseUrl = getDocumentsApiUrl();
-  return buildUrlWithBase(baseUrl, endpoint, params);
+  return buildUrlWithBase(getDocumentsApiUrl(), endpoint, params);
 }
 
 /**
