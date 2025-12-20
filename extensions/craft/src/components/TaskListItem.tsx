@@ -90,13 +90,6 @@ function buildAccessories(task: Task): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
   const today = new Date().toISOString().split("T")[0];
 
-  // Add location info
-  if (task.location?.title) {
-    accessories.push({ tag: { value: task.location.title }, tooltip: "Document" });
-  } else if (task.location?.type === "inbox") {
-    accessories.push({ tag: { value: "Inbox", color: Color.Blue }, tooltip: "Location" });
-  }
-
   // Add schedule date (red if overdue)
   if (task.taskInfo.scheduleDate) {
     const isOverdue = task.taskInfo.state === "todo" && task.taskInfo.scheduleDate < today;
@@ -122,17 +115,24 @@ function buildAccessories(task: Task): List.Item.Accessory[] {
     accessories.push({ icon: Icon.ArrowClockwise, tooltip: `Repeats ${task.repeat.frequency}` });
   }
 
+  // Add location info (always last)
+  if (task.location?.title) {
+    accessories.push({ tag: { value: task.location.title }, tooltip: "Document" });
+  } else if (task.location?.type === "inbox") {
+    accessories.push({ tag: { value: "Inbox", color: Color.Blue }, tooltip: "Location" });
+  }
+
   return accessories;
 }
 
-function getStateIcon(state: string): Icon {
+function getStateIcon(state: string): { source: Icon; tintColor?: Color } {
   switch (state) {
     case "done":
-      return Icon.CheckCircle;
+      return { source: Icon.CheckCircle, tintColor: Color.Green };
     case "canceled":
-      return Icon.XMarkCircle;
+      return { source: Icon.XMarkCircle, tintColor: Color.SecondaryText };
     default:
-      return Icon.Circle;
+      return { source: Icon.Circle };
   }
 }
 

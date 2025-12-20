@@ -284,7 +284,9 @@ export async function createDocument(params: {
 }
 
 /**
- * Delete documents (moves to trash)
+ * Delete documents
+ * - If document is not in trash: moves to trash
+ * - If document is already in trash: permanently deletes
  */
 export async function deleteDocuments(documentIds: string[]): Promise<string[]> {
   const data = await fetch<{ items: string[] }>(buildUrl(ENDPOINTS.documents), {

@@ -58,6 +58,12 @@
       "mode": "view"
     },
     {
+      "name": "show-recently-deleted",
+      "title": "Show Recently Deleted",
+      "description": "View and manage deleted documents in trash",
+      "mode": "view"
+    },
+    {
       "name": "show-today-tasks",
       "title": "Show Today Tasks",
       "description": "View active tasks grouped by location",
