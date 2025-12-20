@@ -95,5 +95,4 @@ export {
   appendBlockId,
   searchLink,
   newDocumentLink,
-  dailyNoteLink,
 } from "./links";

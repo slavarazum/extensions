@@ -141,22 +141,3 @@ export function newDocumentLink(spaceId?: string): string {
   }
   return `${CRAFT_SCHEME}createdocument`;
 }
-
-/**
- * Build a link to open today's daily note
- *
- * @example
- * ```ts
- * dailyNoteLink()
- * // => "craftdocs://openDailyNote"
- *
- * dailyNoteLink("space123")
- * // => "craftdocs://openDailyNote?spaceId=space123"
- * ```
- */
-export function dailyNoteLink(spaceId?: string): string {
-  if (spaceId) {
-    return `${CRAFT_SCHEME}openDailyNote?spaceId=${encodeURIComponent(spaceId)}`;
-  }
-  return `${CRAFT_SCHEME}openDailyNote`;
-}

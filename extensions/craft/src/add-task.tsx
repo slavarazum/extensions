@@ -118,18 +118,8 @@ export default function Command(props: LaunchProps<{ arguments: AddTaskArguments
         <Form.Dropdown.Item value="inbox" title="Inbox" icon={Icon.Tray} />
         <Form.Dropdown.Item value="dailyNote" title="Daily Note" icon={Icon.Calendar} />
       </Form.Dropdown>
-      <Form.DatePicker
-        id="scheduleDate"
-        title="Schedule"
-        value={scheduleDate}
-        onChange={setScheduleDate}
-      />
-      <Form.DatePicker
-        id="deadlineDate"
-        title="Deadline"
-        value={deadlineDate}
-        onChange={setDeadlineDate}
-      />
+      <Form.DatePicker id="scheduleDate" title="Schedule" value={scheduleDate} onChange={setScheduleDate} />
+      <Form.DatePicker id="deadlineDate" title="Deadline" value={deadlineDate} onChange={setDeadlineDate} />
     </Form>
   );
 }

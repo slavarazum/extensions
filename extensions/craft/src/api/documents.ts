@@ -20,6 +20,8 @@ export interface Document {
   lastModifiedAt?: string;
   createdAt?: string;
   clickableLink?: string;
+  dailyNoteDate?: string; // YYYY-MM-DD format for daily notes
+  spaceId?: string; // Space ID for constructing deep links
 }
 
 export type VirtualLocation = "unsorted" | "trash" | "templates" | "daily_notes";
@@ -54,6 +56,8 @@ export interface ListDocumentsParams {
   createdDateLte?: string;
   lastModifiedDateGte?: string;
   lastModifiedDateLte?: string;
+  dailyNoteDateGte?: string;
+  dailyNoteDateLte?: string;
 }
 
 export interface SearchDocumentsParams {
@@ -187,7 +191,7 @@ export function useRecentDocuments(): UseRecentDocumentsResult {
 
         return { data: sorted };
       },
-    }
+    },
   );
 
   return {
@@ -219,7 +223,10 @@ export interface UseDocumentSearchResult {
  * const { results, isLoading, hasQuery } = useDocumentSearch(query);
  * ```
  */
-export function useDocumentSearch(query: string, params?: Omit<SearchDocumentsParams, "include">): UseDocumentSearchResult {
+export function useDocumentSearch(
+  query: string,
+  params?: Omit<SearchDocumentsParams, "include">,
+): UseDocumentSearchResult {
   const hasQuery = query.length > 0;
 
   const { data, isLoading, error, revalidate } = useFetch<SearchDocumentsResponse>(

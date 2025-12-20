@@ -1,6 +1,15 @@
 import { ActionPanel, Action, List, Icon, open, Detail } from "@raycast/api";
 import { useState, useMemo } from "react";
-import { useDocumentSearch, useDocuments, useRecentDocuments, useBlocks, searchBlocks, appendBlockId, type DocumentSearchMatch, type Document } from "./api";
+import {
+  useDocumentSearch,
+  useDocuments,
+  useRecentDocuments,
+  useBlocks,
+  searchBlocks,
+  appendBlockId,
+  type DocumentSearchMatch,
+  type Document,
+} from "./api";
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
@@ -9,7 +18,7 @@ export default function Command() {
   // Fetch all documents for documentMap when searching (to get clickableLinks)
   const { documents: allDocsForMap, isLoading: isLoadingAllDocs } = useDocuments(
     { fetchMetadata: true },
-    { execute: hasQuery }
+    { execute: hasQuery },
   );
 
   // Fetch recent documents (sorted by last modified, deduplicated)
@@ -73,10 +82,7 @@ export default function Command() {
  * - Ensures the highlight isn't cut off
  */
 function formatSnippet(markdown: string, maxLength = 80): string {
-  const cleaned = markdown
-    .replace(/\n+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const cleaned = markdown.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
 
   if (cleaned.length <= maxLength) {
     return cleaned;
@@ -197,16 +203,18 @@ function SearchResultItem({
         <ActionPanel>
           <ActionPanel.Section>
             {document?.clickableLink && (
-              <Action
-                title="Open in App"
-                icon={Icon.ArrowRight}
-                onAction={handleOpenInApp}
-              />
+              <Action title="Open in App" icon={Icon.ArrowRight} onAction={handleOpenInApp} />
             )}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
-              target={<DocumentPreview documentId={searchMatch.documentId} title={document?.title} clickableLink={document?.clickableLink} />}
+              target={
+                <DocumentPreview
+                  documentId={searchMatch.documentId}
+                  title={document?.title}
+                  clickableLink={document?.clickableLink}
+                />
+              }
               shortcut={{ modifiers: ["cmd"], key: "y" }}
             />
             <Action.CopyToClipboard
@@ -222,9 +230,7 @@ function SearchResultItem({
 }
 
 function RecentDocumentItem({ document }: { document: Document }) {
-  const lastModified = document.lastModifiedAt
-    ? new Date(document.lastModifiedAt).toLocaleDateString()
-    : undefined;
+  const lastModified = document.lastModifiedAt ? new Date(document.lastModifiedAt).toLocaleDateString() : undefined;
 
   return (
     <List.Item
@@ -233,16 +239,17 @@ function RecentDocumentItem({ document }: { document: Document }) {
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            {document.clickableLink && (
-              <Action.OpenInBrowser
-                title="Open in App"
-                url={document.clickableLink}
-              />
-            )}
+            {document.clickableLink && <Action.OpenInBrowser title="Open in App" url={document.clickableLink} />}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
-              target={<DocumentPreview documentId={document.id} title={document.title} clickableLink={document.clickableLink} />}
+              target={
+                <DocumentPreview
+                  documentId={document.id}
+                  title={document.title}
+                  clickableLink={document.clickableLink}
+                />
+              }
               shortcut={{ modifiers: ["cmd"], key: "y" }}
             />
             <Action.CopyToClipboard
@@ -291,9 +298,7 @@ function DocumentPreview({
       navigationTitle={title || "Document Preview"}
       actions={
         <ActionPanel>
-          {clickableLink && (
-            <Action.OpenInBrowser title="Open in App" url={clickableLink} />
-          )}
+          {clickableLink && <Action.OpenInBrowser title="Open in App" url={clickableLink} />}
           <Action.CopyToClipboard title="Copy Document ID" content={documentId} />
         </ActionPanel>
       }

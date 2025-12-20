@@ -50,7 +50,7 @@ export default function Command() {
     (taskId: string) => {
       return completingTasksRef.current[taskId] || completingTasks[taskId];
     },
-    [completingTasks]
+    [completingTasks],
   );
 
   // Handle complete with animation
@@ -83,7 +83,7 @@ export default function Command() {
         revalidate();
       }, COMPLETE_ANIMATION_DELAY);
     },
-    [actions, revalidate]
+    [actions, revalidate],
   );
 
   const handleReopen = useCallback(
@@ -96,7 +96,7 @@ export default function Command() {
         showFailureToast(error, { title: "Failed to reopen task" });
       }
     },
-    [actions, revalidate]
+    [actions, revalidate],
   );
 
   // Sort groups: Inbox first, then Daily Note, then documents alphabetically
@@ -114,11 +114,7 @@ export default function Command() {
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Filter tasks...">
       {sortedGroups.map(([groupKey, groupTasks]) => (
-        <List.Section
-          key={groupKey}
-          title={groupKey}
-          subtitle={`${groupTasks.length}`}
-        >
+        <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
           {groupTasks.map((task) => (
             <TodayTaskItem
               key={task.id}
@@ -132,11 +128,7 @@ export default function Command() {
         </List.Section>
       ))}
       {!isLoading && tasks.length === 0 && (
-        <List.EmptyView
-          icon={Icon.CheckCircle}
-          title="No active tasks"
-          description="All caught up! Enjoy your day."
-        />
+        <List.EmptyView icon={Icon.CheckCircle} title="No active tasks" description="All caught up! Enjoy your day." />
       )}
     </List>
   );

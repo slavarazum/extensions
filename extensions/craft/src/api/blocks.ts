@@ -233,7 +233,7 @@ export function useBlockSearch(
 }
 
 // =============================================================================
-// Hook: useDailyNote
+// Hook: useDailyNote (single daily note)
 // =============================================================================
 
 export interface UseDailyNoteResult {
@@ -325,10 +325,7 @@ export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
 /**
  * Insert multiple blocks
  */
-export async function insertBlocks(
-  blocks: Partial<Block>[],
-  position: BlockPosition,
-): Promise<Block[]> {
+export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosition): Promise<Block[]> {
   const data = await fetch<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
     method: "POST",
     body: JSON.stringify({ blocks, position }),
