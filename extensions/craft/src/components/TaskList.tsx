@@ -1,6 +1,7 @@
-import { ActionPanel, Action, List, Icon } from "@raycast/api";
-import { useState } from "react";
-import { useTasks, useTaskHandlers, type TaskScope } from "../api";
+import { ActionPanel, Action, List, Icon, Toast, showToast } from "@raycast/api";
+import { useState, useCallback, useRef } from "react";
+import { showFailureToast } from "@raycast/utils";
+import { useTasks, useTaskActions, useTaskHandlers, type Task, type TaskScope } from "../api";
 import { TaskListItem } from "./TaskListItem";
 import { CreateTaskForm } from "./CreateTaskForm";
 
@@ -13,6 +14,9 @@ const SCOPE_CONFIG: Record<TaskScope, { title: string; icon: Icon; description: 
 };
 
 const SCOPE_OPTIONS: TaskScope[] = ["active", "upcoming", "inbox", "logbook"];
+
+/** Delay before removing completed task from list (ms) */
+const COMPLETE_ANIMATION_DELAY = 3000;
 
 export interface TaskListProps {
   /** Fixed scope - renders a simple list */
@@ -35,11 +39,57 @@ export function TaskList({
   allowMutations = false,
 }: TaskListProps) {
   const [dynamicScope, setDynamicScope] = useState<TaskScope>(defaultScope);
+  // Track completing tasks - use object for reliable React state updates + ref for persistence
+  const [completingTasks, setCompletingTasks] = useState<Record<string, boolean>>({});
+  const completingTasksRef = useRef<Record<string, boolean>>({});
   const scope = fixedScope ?? dynamicScope;
   const config = SCOPE_CONFIG[scope];
 
   const { tasks, isLoading, revalidate } = useTasks({ scope });
-  const { handleComplete, handleReopen, handleCancel, handleDelete } = useTaskHandlers(revalidate);
+  const actions = useTaskActions();
+  const { handleReopen, handleCancel, handleDelete } = useTaskHandlers(revalidate);
+
+  // Check if a task is completing (use ref for immediate access, state for re-renders)
+  const isTaskCompleting = useCallback((taskId: string) => {
+    return completingTasksRef.current[taskId] || completingTasks[taskId];
+  }, [completingTasks]);
+
+  // Wrap handleComplete to show animation before removing
+  const handleCompleteWithAnimation = useCallback(
+    async (task: Task) => {
+      // Mark as completing (shows green checkmark) - update both ref and state
+      completingTasksRef.current[task.id] = true;
+      setCompletingTasks((prev) => ({ ...prev, [task.id]: true }));
+
+      try {
+        // Complete the task on the server (without immediate revalidation)
+        await actions.complete(task.id);
+        await showToast({ style: Toast.Style.Success, title: "Task completed" });
+      } catch (error) {
+        // On error, remove from completing state immediately
+        delete completingTasksRef.current[task.id];
+        setCompletingTasks((prev) => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+        showFailureToast(error, { title: "Failed to complete task" });
+        return;
+      }
+
+      // Wait before removing from list
+      setTimeout(() => {
+        delete completingTasksRef.current[task.id];
+        setCompletingTasks((prev) => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+        revalidate();
+      }, COMPLETE_ANIMATION_DELAY);
+    },
+    [actions, revalidate]
+  );
 
   const createAction = allowCreate ? (
     <Action.Push
@@ -70,12 +120,13 @@ export function TaskList({
           <TaskListItem
             key={task.id}
             task={task}
-            onComplete={() => handleComplete(task)}
+            onComplete={() => handleCompleteWithAnimation(task)}
             onReopen={() => handleReopen(task)}
             onCancel={allowMutations ? () => handleCancel(task) : undefined}
             onDelete={allowMutations ? () => handleDelete(task) : undefined}
             onRefresh={revalidate}
             extraActions={createAction}
+            isCompleting={isTaskCompleting(task.id)}
           />
         ))}
       </List.Section>
