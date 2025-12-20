@@ -1,5 +1,5 @@
 import { ActionPanel, Action, List, Icon, Color } from "@raycast/api";
-import type { Task } from "../api";
+import { blockLink, type Task } from "../api";
 
 export interface TaskListItemProps {
   task: Task;
@@ -52,7 +52,7 @@ export function TaskListItem({
             )}
             <Action.OpenInBrowser
               title="Open in Craft"
-              url={`craftdocs://open?blockId=${task.id}`}
+              url={blockLink(task.id)}
               shortcut={{ modifiers: ["cmd"], key: "return" }}
             />
           </ActionPanel.Section>
