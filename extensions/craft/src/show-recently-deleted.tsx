@@ -55,7 +55,6 @@ export default function Command() {
 
     try {
       const ids = sortedDocs.map((doc) => doc.id);
-      console.log(sortedDocs);
 
       await deleteDocuments(ids);
       await showToast({ style: Toast.Style.Success, title: `Deleted ${ids.length} items` });
