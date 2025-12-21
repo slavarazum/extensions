@@ -111,6 +111,13 @@
           "required": false
         }
       ]
+    },
+    {
+      "name": "create-document",
+      "title": "Create Document",
+      "subtitle": "Craft",
+      "description": "Create a new document in Craft",
+      "mode": "view"
     }
   ],
   "tools": [

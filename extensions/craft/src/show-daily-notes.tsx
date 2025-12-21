@@ -1,6 +1,7 @@
-import { ActionPanel, Action, List, Icon, Color, useNavigation } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, Color, useNavigation, Alert, confirmAlert, showToast, Toast } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { useDocuments, useBlocks, type Block, type Document } from "./api";
+import { useDocuments, useBlocks, deleteDocuments, type Block, type Document } from "./api";
 
 type DateRange = "month" | "3months" | "all";
 
@@ -138,6 +139,30 @@ export default function Command() {
                     icon={Icon.ArrowClockwise}
                     onAction={revalidate}
                     shortcut={{ modifiers: ["cmd"], key: "r" }}
+                  />
+                  <Action
+                    title="Move to Trash"
+                    icon={{ source: Icon.Trash, tintColor: Color.Red }}
+                    style={Action.Style.Destructive}
+                    shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                    onAction={async () => {
+                      const confirmed = await confirmAlert({
+                        title: "Move to Trash",
+                        message: `Are you sure you want to move the daily note for ${getDateLabel(noteDate)} to trash?`,
+                        primaryAction: {
+                          title: "Move to Trash",
+                          style: Alert.ActionStyle.Destructive,
+                        },
+                      });
+                      if (!confirmed) return;
+                      try {
+                        await deleteDocuments([doc.id]);
+                        await showToast({ style: Toast.Style.Success, title: "Moved to trash" });
+                        revalidate();
+                      } catch (error) {
+                        showFailureToast(error, { title: "Failed to delete" });
+                      }
+                    }}
                   />
                 </ActionPanel>
               }
