@@ -18,61 +18,78 @@
     {
       "name": "search-documents",
       "title": "Search Documents",
-      "description": "Search documents globally",
+      "subtitle": "Craft",
+      "description": "Search all documents in Craft",
       "mode": "view"
     },
     {
       "name": "add-to-daily-note",
       "title": "Add to Daily Note",
-      "description": "Add content to your daily note",
+      "subtitle": "Craft",
+      "description": "Quickly add content to today's daily note",
       "mode": "view"
     },
     {
       "name": "show-daily-notes",
-      "title": "Show Daily Notes",
-      "description": "Browse your daily notes",
+      "title": "Browse Daily Notes",
+      "subtitle": "Craft",
+      "description": "View and navigate your daily notes",
+      "mode": "view"
+    },
+    {
+      "name": "search-daily-notes",
+      "title": "Search Daily Notes",
+      "subtitle": "Craft",
+      "description": "Search content within daily notes",
       "mode": "view"
     },
     {
       "name": "show-tasks",
-      "title": "Show Tasks",
-      "description": "Manage and interact with tasks",
+      "title": "Browse Tasks",
+      "subtitle": "Craft",
+      "description": "View and manage all tasks",
       "mode": "view"
     },
     {
       "name": "show-upcoming-tasks",
-      "title": "Show Upcoming Tasks",
-      "description": "View upcoming tasks",
+      "title": "Upcoming Tasks",
+      "subtitle": "Craft",
+      "description": "View scheduled and upcoming tasks",
       "mode": "view"
     },
     {
       "name": "show-inbox-tasks",
-      "title": "Show Inbox Tasks",
-      "description": "View inbox tasks",
+      "title": "Inbox Tasks",
+      "subtitle": "Craft",
+      "description": "View tasks in your inbox",
       "mode": "view"
     },
     {
       "name": "show-logbook-tasks",
-      "title": "Show Logbook Tasks",
+      "title": "Task Logbook",
+      "subtitle": "Craft",
       "description": "View completed and canceled tasks",
       "mode": "view"
     },
     {
       "name": "show-recently-deleted",
-      "title": "Show Recently Deleted",
-      "description": "View and manage deleted documents in trash",
+      "title": "Recently Deleted",
+      "subtitle": "Craft",
+      "description": "View and permanently delete trashed documents",
       "mode": "view"
     },
     {
       "name": "show-today-tasks",
-      "title": "Show Today Tasks",
-      "description": "View active tasks grouped by location",
+      "title": "Today's Tasks",
+      "subtitle": "Craft",
+      "description": "View today's tasks grouped by location",
       "mode": "view"
     },
     {
       "name": "add-task",
-      "title": "Add New Task",
-      "description": "Quickly add a new task to Craft",
+      "title": "Create Task",
+      "subtitle": "Craft",
+      "description": "Create a new task in Craft",
       "mode": "view",
       "arguments": [
         {
