@@ -1,4 +1,5 @@
-import { ActionPanel, Action, List, Icon, open, Detail } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, open, Detail, Alert, confirmAlert, showToast, Toast, Color } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import { useState, useMemo } from "react";
 import {
   useDocumentSearch,
@@ -7,22 +8,52 @@ import {
   useBlocks,
   searchBlocks,
   appendBlockId,
+  deleteDocuments,
   type DocumentSearchMatch,
   type Document,
 } from "./api";
 
+type LocationFilter = "all" | "unsorted";
+
 export default function Command() {
   const [searchText, setSearchText] = useState("");
-  const { results, isLoading: isSearching, hasQuery } = useDocumentSearch(searchText, { fetchMetadata: true });
+  const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
+
+  const locationParam = locationFilter === "all" ? undefined : locationFilter;
+
+  const { results, isLoading: isSearching, hasQuery } = useDocumentSearch(searchText, {
+    fetchMetadata: true,
+    location: locationParam,
+  });
 
   // Fetch all documents for documentMap when searching (to get clickableLinks)
   const { documents: allDocsForMap, isLoading: isLoadingAllDocs } = useDocuments(
-    { fetchMetadata: true },
+    { fetchMetadata: true, location: locationParam },
     { execute: hasQuery },
   );
 
-  // Fetch recent documents (sorted by last modified, deduplicated)
-  const { documents, isLoading: isLoadingDocuments } = useRecentDocuments();
+  // Fetch recent documents - use location filter when set
+  const { documents: unfilteredDocs, isLoading: isLoadingUnfiltered, revalidate: revalidateUnfiltered } = useRecentDocuments();
+  const { documents: filteredDocs, isLoading: isLoadingFiltered, revalidate: revalidateFiltered } = useDocuments(
+    { fetchMetadata: true, location: "unsorted" },
+    { execute: locationFilter === "unsorted" },
+  );
+
+  // Use filtered docs when unsorted is selected, otherwise recent docs
+  const documents = useMemo(() => {
+    if (locationFilter === "unsorted") {
+      // Sort filtered docs by last modified (most recent first)
+      return [...filteredDocs].sort((a, b) => {
+        const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
+        const dateB = b.lastModifiedAt ? new Date(b.lastModifiedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+    }
+    return unfilteredDocs;
+  }, [unfilteredDocs, filteredDocs, locationFilter]);
+
+  const isLoadingDocuments = locationFilter === "unsorted" ? isLoadingFiltered : isLoadingUnfiltered;
+  const revalidateDocuments = locationFilter === "unsorted" ? revalidateFiltered : revalidateUnfiltered;
 
   // Create a map of document ID to document info for search results
   const documentMap = useMemo(() => {
@@ -43,6 +74,12 @@ export default function Command() {
       onSearchTextChange={setSearchText}
       searchBarPlaceholder="Search Craft documents..."
       throttle
+      searchBarAccessory={
+        <List.Dropdown tooltip="Filter by Location" value={locationFilter} onChange={(v) => setLocationFilter(v as LocationFilter)}>
+          <List.Dropdown.Item title="All Documents" value="all" icon={Icon.List} />
+          <List.Dropdown.Item title="Unsorted" value="unsorted" icon={Icon.Document} />
+        </List.Dropdown>
+      }
     >
       {hasQuery ? (
         <List.Section title="Search Results" subtitle={results.length > 0 ? `${results.length}` : undefined}>
@@ -61,7 +98,7 @@ export default function Command() {
       ) : (
         <List.Section title="Recent Documents" subtitle={documents.length > 0 ? `${documents.length}` : undefined}>
           {documents.map((doc, index) => (
-            <RecentDocumentItem key={`${doc.id}-${index}`} document={doc} />
+            <RecentDocumentItem key={`${doc.id}-${index}`} document={doc} onDelete={revalidateDocuments} />
           ))}
         </List.Section>
       )}
@@ -223,13 +260,38 @@ function SearchResultItem({
               shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
             />
           </ActionPanel.Section>
+          <ActionPanel.Section>
+            <Action
+              title="Move to Trash"
+              icon={{ source: Icon.Trash, tintColor: Color.Red }}
+              style={Action.Style.Destructive}
+              shortcut={{ modifiers: ["ctrl"], key: "x" }}
+              onAction={async () => {
+                const confirmed = await confirmAlert({
+                  title: "Move to Trash",
+                  message: `Are you sure you want to move "${document?.title || "Untitled"}" to trash?`,
+                  primaryAction: {
+                    title: "Move to Trash",
+                    style: Alert.ActionStyle.Destructive,
+                  },
+                });
+                if (!confirmed) return;
+                try {
+                  await deleteDocuments([searchMatch.documentId]);
+                  await showToast({ style: Toast.Style.Success, title: "Moved to trash" });
+                } catch (error) {
+                  showFailureToast(error, { title: "Failed to delete" });
+                }
+              }}
+            />
+          </ActionPanel.Section>
         </ActionPanel>
       }
     />
   );
 }
 
-function RecentDocumentItem({ document }: { document: Document }) {
+function RecentDocumentItem({ document, onDelete }: { document: Document; onDelete: () => void }) {
   const lastModified = document.lastModifiedAt ? new Date(document.lastModifiedAt).toLocaleDateString() : undefined;
 
   return (
@@ -256,6 +318,32 @@ function RecentDocumentItem({ document }: { document: Document }) {
               title="Copy Document ID"
               content={document.id}
               shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            />
+          </ActionPanel.Section>
+          <ActionPanel.Section>
+            <Action
+              title="Move to Trash"
+              icon={{ source: Icon.Trash, tintColor: Color.Red }}
+              style={Action.Style.Destructive}
+              shortcut={{ modifiers: ["ctrl"], key: "x" }}
+              onAction={async () => {
+                const confirmed = await confirmAlert({
+                  title: "Move to Trash",
+                  message: `Are you sure you want to move "${document.title || "Untitled"}" to trash?`,
+                  primaryAction: {
+                    title: "Move to Trash",
+                    style: Alert.ActionStyle.Destructive,
+                  },
+                });
+                if (!confirmed) return;
+                try {
+                  await deleteDocuments([document.id]);
+                  await showToast({ style: Toast.Style.Success, title: "Moved to trash" });
+                  onDelete();
+                } catch (error) {
+                  showFailureToast(error, { title: "Failed to delete" });
+                }
+              }}
             />
           </ActionPanel.Section>
         </ActionPanel>
