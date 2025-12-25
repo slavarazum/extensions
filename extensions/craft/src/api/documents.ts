@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, fetch } from "./client";
+import { buildUrl, buildDailyNotesUrl, fetch, ItemsResponse, QueryParams } from "./client";
 
 // =============================================================================
 // Types
@@ -73,44 +73,23 @@ export interface SearchDocumentsParams {
   lastModifiedDateLte?: string;
 }
 
-// =============================================================================
-// Responses
-// =============================================================================
-
-interface DocumentsResponse {
-  items: Document[];
+export interface SearchDailyNotesParams {
+  include?: string | string[];
+  regexps?: string[];
+  startDate?: string;
+  endDate?: string;
+  fetchMetadata?: boolean;
 }
 
-interface SearchDocumentsResponse {
-  items: DocumentSearchMatch[];
+export interface DailyNoteSearchMatch {
+  dailyNoteDate: string;
+  markdown: string;
+  blockId?: string;
+  lastModifiedAt?: string;
+  createdAt?: string;
 }
 
-// =============================================================================
-// Internal: URL Builders
-// =============================================================================
-
-function documentsUrl(params?: ListDocumentsParams): string {
-  return buildUrl(ENDPOINTS.documents, params as Record<string, string | boolean | undefined>);
-}
-
-function searchDocumentsUrl(params: SearchDocumentsParams): string {
-  // Build query params - arrays need special handling
-  const flatParams: Record<string, string | boolean | undefined> = {
-    fetchMetadata: params.fetchMetadata,
-    location: params.location,
-    createdDateGte: params.createdDateGte,
-    createdDateLte: params.createdDateLte,
-    lastModifiedDateGte: params.lastModifiedDateGte,
-    lastModifiedDateLte: params.lastModifiedDateLte,
-  };
-
-  // include can be string or array
-  if (typeof params.include === "string") {
-    flatParams.include = params.include;
-  }
-
-  return buildUrl(ENDPOINTS.search, flatParams);
-}
+export type DocumentDestination = { destination: "unsorted" | "templates" } | { folderId: string };
 
 // =============================================================================
 // Hook: useDocuments
@@ -136,10 +115,10 @@ export interface UseDocumentsResult {
  * ```
  */
 export function useDocuments(params?: ListDocumentsParams, options?: UseDocumentsOptions): UseDocumentsResult {
-  const { data, isLoading, error, revalidate } = useFetch<DocumentsResponse>(documentsUrl(params), {
-    keepPreviousData: true,
-    execute: options?.execute,
-  });
+  const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Document>>(
+    buildUrl(ENDPOINTS.documents, { ...params }),
+    { keepPreviousData: true, execute: options?.execute },
+  );
 
   return {
     documents: data?.items ?? [],
@@ -169,37 +148,29 @@ export interface UseRecentDocumentsResult {
  * ```
  */
 export function useRecentDocuments(): UseRecentDocumentsResult {
-  const { data, isLoading, error, revalidate } = useFetch<DocumentsResponse, undefined, Document[]>(
-    documentsUrl({ fetchMetadata: true }),
+  const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Document>, undefined, Document[]>(
+    buildUrl(ENDPOINTS.documents, { fetchMetadata: true }),
     {
       keepPreviousData: true,
-      mapResult(result: DocumentsResponse) {
-        // Deduplicate by document ID
+      mapResult(result) {
         const seen = new Set<string>();
         const uniqueDocs = result.items.filter((doc) => {
           if (seen.has(doc.id)) return false;
           seen.add(doc.id);
           return true;
         });
-
-        // Sort by last modified date (most recent first)
-        const sorted = uniqueDocs.sort((a, b) => {
-          const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
-          const dateB = b.lastModifiedAt ? new Date(b.lastModifiedAt).getTime() : 0;
-          return dateB - dateA;
-        });
-
-        return { data: sorted };
+        return {
+          data: uniqueDocs.sort((a, b) => {
+            const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
+            const dateB = b.lastModifiedAt ? new Date(b.lastModifiedAt).getTime() : 0;
+            return dateB - dateA;
+          }),
+        };
       },
     },
   );
 
-  return {
-    documents: data ?? [],
-    isLoading,
-    error,
-    revalidate,
-  };
+  return { documents: data ?? [], isLoading, error, revalidate };
 }
 
 // =============================================================================
@@ -228,13 +199,19 @@ export function useDocumentSearch(
   params?: Omit<SearchDocumentsParams, "include">,
 ): UseDocumentSearchResult {
   const hasQuery = query.length > 0;
+  const searchParams: QueryParams = {
+    include: query,
+    fetchMetadata: params?.fetchMetadata,
+    location: params?.location,
+    createdDateGte: params?.createdDateGte,
+    createdDateLte: params?.createdDateLte,
+    lastModifiedDateGte: params?.lastModifiedDateGte,
+    lastModifiedDateLte: params?.lastModifiedDateLte,
+  };
 
-  const { data, isLoading, error, revalidate } = useFetch<SearchDocumentsResponse>(
-    searchDocumentsUrl({ ...params, include: query }),
-    {
-      execute: hasQuery,
-      keepPreviousData: true,
-    },
+  const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<DocumentSearchMatch>>(
+    buildUrl(ENDPOINTS.search, searchParams),
+    { execute: hasQuery, keepPreviousData: true },
   );
 
   return {
@@ -254,7 +231,7 @@ export function useDocumentSearch(
  * Fetch documents list (for tools)
  */
 export async function fetchDocuments(params?: ListDocumentsParams): Promise<Document[]> {
-  const data = await fetch<DocumentsResponse>(documentsUrl(params));
+  const data = await fetch<ItemsResponse<Document>>(buildUrl(ENDPOINTS.documents, { ...params }));
   return data.items;
 }
 
@@ -262,7 +239,32 @@ export async function fetchDocuments(params?: ListDocumentsParams): Promise<Docu
  * Search documents (for tools)
  */
 export async function searchDocuments(params: SearchDocumentsParams): Promise<DocumentSearchMatch[]> {
-  const data = await fetch<SearchDocumentsResponse>(searchDocumentsUrl(params));
+  const searchParams: QueryParams = {
+    include: typeof params.include === "string" ? params.include : undefined,
+    fetchMetadata: params.fetchMetadata,
+    location: params.location,
+    createdDateGte: params.createdDateGte,
+    createdDateLte: params.createdDateLte,
+    lastModifiedDateGte: params.lastModifiedDateGte,
+    lastModifiedDateLte: params.lastModifiedDateLte,
+  };
+  const data = await fetch<ItemsResponse<DocumentSearchMatch>>(buildUrl(ENDPOINTS.search, searchParams));
+  return data.items;
+}
+
+/**
+ * Search daily notes (for tools)
+ */
+export async function searchDailyNotes(params: SearchDailyNotesParams): Promise<DailyNoteSearchMatch[]> {
+  const searchParams: QueryParams = {
+    startDate: params.startDate,
+    endDate: params.endDate,
+    fetchMetadata: params.fetchMetadata,
+    include: typeof params.include === "string" ? params.include : undefined,
+  };
+  const data = await fetch<ItemsResponse<DailyNoteSearchMatch>>(
+    buildDailyNotesUrl("/daily-notes/search", searchParams),
+  );
   return data.items;
 }
 
@@ -271,9 +273,9 @@ export async function searchDocuments(params: SearchDocumentsParams): Promise<Do
  */
 export async function createDocument(params: {
   title: string;
-  destination?: { destination: "unsorted" | "templates" } | { folderId: string };
+  destination?: DocumentDestination;
 }): Promise<Document> {
-  const data = await fetch<{ items: Document[] }>(buildUrl(ENDPOINTS.documents), {
+  const data = await fetch<ItemsResponse<Document>>(buildUrl(ENDPOINTS.documents), {
     method: "POST",
     body: JSON.stringify({
       documents: [{ title: params.title }],
@@ -285,13 +287,28 @@ export async function createDocument(params: {
 
 /**
  * Delete documents
- * - If document is not in trash: moves to trash
- * - If document is already in trash: permanently deletes
  */
 export async function deleteDocuments(documentIds: string[]): Promise<string[]> {
-  const data = await fetch<{ items: string[] }>(buildUrl(ENDPOINTS.documents), {
+  const data = await fetch<ItemsResponse<string>>(buildUrl(ENDPOINTS.documents), {
     method: "DELETE",
     body: JSON.stringify({ documentIds }),
   });
+  return data.items;
+}
+
+/**
+ * Move documents between locations
+ */
+export async function moveDocuments(
+  documentIds: string[],
+  destination: DocumentDestination,
+): Promise<{ id: string; destination: DocumentDestination }[]> {
+  const data = await fetch<ItemsResponse<{ id: string; destination: DocumentDestination }>>(
+    buildUrl(ENDPOINTS.move),
+    {
+      method: "PUT",
+      body: JSON.stringify({ documentIds, destination }),
+    },
+  );
   return data.items;
 }
