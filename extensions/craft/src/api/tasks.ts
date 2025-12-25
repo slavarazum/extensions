@@ -9,7 +9,7 @@
 
 import { Toast, showToast } from "@raycast/api";
 import { useFetch, showFailureToast } from "@raycast/utils";
-import { buildUrl, fetch } from "./client";
+import { buildUrl, fetch, ItemsResponse, IdsResponse } from "./client";
 
 // =============================================================================
 // Types
@@ -51,22 +51,12 @@ export interface Task {
 export type TaskScope = "active" | "upcoming" | "inbox" | "logbook" | "document";
 
 // =============================================================================
-// Endpoint
-// =============================================================================
-
-const ENDPOINT = "/tasks";
-
-// =============================================================================
 // Parameters & Responses
 // =============================================================================
 
 export interface TasksParams {
   scope?: TaskScope;
   documentId?: string;
-}
-
-interface TasksResponse {
-  items: Task[];
 }
 
 interface TaskUpdateInfo {
@@ -84,22 +74,6 @@ export interface CreateTaskParams {
   location: {
     type: "inbox" | "dailyNote";
   };
-}
-
-interface UpdateTasksResponse {
-  items: Task[];
-}
-
-interface DeleteTasksResponse {
-  items: { id: string }[];
-}
-
-// =============================================================================
-// Internal: URL Builder
-// =============================================================================
-
-function tasksUrl(params?: TasksParams): string {
-  return buildUrl(ENDPOINT, params as Record<string, string | undefined>);
 }
 
 // =============================================================================
@@ -122,15 +96,13 @@ export interface UseTasksResult {
  * ```
  */
 export function useTasks(params?: TasksParams): UseTasksResult {
-  const { data, isLoading, error, revalidate } = useFetch<TasksResponse>(tasksUrl(params), {
-    keepPreviousData: true,
-  });
-
-  // Reverse to match Craft app display order (API returns oldest first, Craft shows newest first)
-  const tasks = data?.items ? [...data.items].reverse() : [];
+  const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Task>>(
+    buildUrl("/tasks", { ...params }),
+    { keepPreviousData: true },
+  );
 
   return {
-    tasks,
+    tasks: data?.items ? [...data.items].reverse() : [],
     isLoading,
     error,
     revalidate,
@@ -247,8 +219,7 @@ export function useTaskHandlers(revalidate: () => void): TaskHandlers {
  * Fetch tasks (for tools/non-React code)
  */
 export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
-  const data = await fetch<TasksResponse>(tasksUrl(params));
-  // Reverse to match Craft app display order
+  const data = await fetch<ItemsResponse<Task>>(buildUrl("/tasks", { ...params }));
   return [...data.items].reverse();
 }
 
@@ -256,7 +227,7 @@ export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
  * Create a new task
  */
 export async function createTask(task: CreateTaskParams): Promise<Task> {
-  const data = await fetch<{ items: Task[] }>(buildUrl(ENDPOINT), {
+  const data = await fetch<ItemsResponse<Task>>(buildUrl("/tasks"), {
     method: "POST",
     body: JSON.stringify({ tasks: [task] }),
   });
@@ -267,7 +238,7 @@ export async function createTask(task: CreateTaskParams): Promise<Task> {
  * Update a task's state or dates
  */
 export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promise<void> {
-  await fetch<UpdateTasksResponse>(buildUrl(ENDPOINT), {
+  await fetch<ItemsResponse<Task>>(buildUrl("/tasks"), {
     method: "PUT",
     body: JSON.stringify({ tasksToUpdate: [{ id: taskId, taskInfo: updates }] }),
   });
@@ -277,7 +248,7 @@ export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promi
  * Delete a task
  */
 export async function deleteTask(taskId: string): Promise<void> {
-  await fetch<DeleteTasksResponse>(buildUrl(ENDPOINT), {
+  await fetch<IdsResponse>(buildUrl("/tasks"), {
     method: "DELETE",
     body: JSON.stringify({ idsToDelete: [taskId] }),
   });

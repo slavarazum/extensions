@@ -38,11 +38,14 @@ export {
   type Document,
   type VirtualLocation,
   type DocumentSearchMatch,
+  type DailyNoteSearchMatch,
   type ListDocumentsParams,
   type SearchDocumentsParams,
+  type SearchDailyNotesParams,
   type UseDocumentsResult,
   type UseDocumentSearchResult,
   type UseRecentDocumentsResult,
+  type DocumentDestination,
   // Hooks
   useDocuments,
   useRecentDocuments,
@@ -50,8 +53,10 @@ export {
   // Async functions (for tools)
   fetchDocuments,
   searchDocuments,
+  searchDailyNotes,
   createDocument,
   deleteDocuments,
+  moveDocuments,
 } from "./documents";
 
 // Blocks domain
@@ -81,7 +86,37 @@ export {
   insertBlocks,
   updateBlocks,
   deleteBlocks,
+  moveBlocks,
 } from "./blocks";
+
+// Folders domain
+export {
+  // Types
+  type Folder,
+  type FolderDestination,
+  // Async functions (for tools)
+  fetchFolders,
+  createFolders,
+  deleteFolders,
+  moveFolders,
+} from "./folders";
+
+// Collections domain
+export {
+  // Types
+  type Collection,
+  type CollectionProperty,
+  type CollectionSchema,
+  type CollectionItem,
+  type ListCollectionsParams,
+  // Async functions (for tools)
+  listCollections,
+  getCollectionSchema,
+  getCollectionItems,
+  addCollectionItems,
+  updateCollectionItems,
+  deleteCollectionItems,
+} from "./collections";
 
 // Deep links
 export {

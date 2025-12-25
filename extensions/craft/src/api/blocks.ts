@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, fetch } from "./client";
+import { buildUrl, fetch, ItemsResponse, IdsResponse } from "./client";
 
 // =============================================================================
 // Types
@@ -114,33 +114,6 @@ export interface InsertBlockParams {
 }
 
 // =============================================================================
-// Responses
-// =============================================================================
-
-// GET /blocks returns a single block (the page) with nested content
-type BlockResponse = Block;
-
-interface SearchBlocksResponse {
-  items: SearchMatch[];
-}
-
-interface InsertBlocksResponse {
-  items: Block[];
-}
-
-// =============================================================================
-// Internal: URL Builders
-// =============================================================================
-
-function blocksUrl(params: GetBlocksParams): string {
-  return buildUrl(ENDPOINTS.blocks, params as unknown as Record<string, string | number | boolean | undefined>);
-}
-
-function searchBlocksUrl(params: SearchBlocksParams): string {
-  return buildUrl(ENDPOINTS.search, params as unknown as Record<string, string | number | boolean | undefined>);
-}
-
-// =============================================================================
 // Hook: useBlocks
 // =============================================================================
 
@@ -166,16 +139,13 @@ export interface UseBlocksResult {
 export function useBlocks(params: GetBlocksParams): UseBlocksResult {
   const hasTarget = Boolean(params.id || params.date);
 
-  const { data, isLoading, error, revalidate } = useFetch<BlockResponse>(blocksUrl(params), {
-    execute: hasTarget,
-    keepPreviousData: true,
-  });
-
-  // API returns single block with nested content array
-  const blocks = data?.content ?? (data ? [data] : []);
+  const { data, isLoading, error, revalidate } = useFetch<Block>(
+    buildUrl(ENDPOINTS.blocks, { ...params }),
+    { execute: hasTarget, keepPreviousData: true },
+  );
 
   return {
-    blocks,
+    blocks: data?.content ?? (data ? [data] : []),
     isLoading: hasTarget ? isLoading : false,
     error,
     revalidate,
@@ -207,26 +177,22 @@ export function useBlockSearch(
   pattern: string,
   options?: { beforeBlockCount?: number; afterBlockCount?: number },
 ): UseBlockSearchResult {
-  const hasPattern = pattern.length > 0;
-  const hasBlockId = blockId.length > 0;
-  const shouldExecute = hasPattern && hasBlockId;
+  const shouldExecute = pattern.length > 0 && blockId.length > 0;
 
-  const { data, isLoading, error, revalidate } = useFetch<SearchBlocksResponse>(
-    searchBlocksUrl({
+  const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<SearchMatch>>(
+    buildUrl(ENDPOINTS.search, {
       blockId,
       pattern,
       beforeBlockCount: options?.beforeBlockCount ?? 3,
       afterBlockCount: options?.afterBlockCount ?? 3,
     }),
-    {
-      execute: shouldExecute,
-    },
+    { execute: shouldExecute },
   );
 
   return {
     matches: data?.items ?? [],
     isLoading: shouldExecute ? isLoading : false,
-    hasPattern,
+    hasPattern: pattern.length > 0,
     error,
     revalidate,
   };
@@ -289,8 +255,7 @@ export function useDailyNote(date?: string): UseDailyNoteResult {
  * Fetch blocks (for tools)
  */
 export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
-  const data = await fetch<BlockResponse>(blocksUrl(params));
-  // API returns single block with nested content array
+  const data = await fetch<Block>(buildUrl(ENDPOINTS.blocks, { ...params }));
   return data.content ?? [data];
 }
 
@@ -298,7 +263,7 @@ export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
  * Search blocks (for tools)
  */
 export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMatch[]> {
-  const data = await fetch<SearchBlocksResponse>(searchBlocksUrl(params));
+  const data = await fetch<ItemsResponse<SearchMatch>>(buildUrl(ENDPOINTS.search, { ...params }));
   return data.items;
 }
 
@@ -306,16 +271,10 @@ export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMa
  * Insert a block
  */
 export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
-  const data = await fetch<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<ItemsResponse<Block>>(buildUrl(ENDPOINTS.blocks), {
     method: "POST",
     body: JSON.stringify({
-      blocks: [
-        {
-          type: "text",
-          markdown: params.content,
-          listStyle: params.listStyle ?? "none",
-        },
-      ],
+      blocks: [{ type: "text", markdown: params.content, listStyle: params.listStyle ?? "none" }],
       position: params.position,
     }),
   });
@@ -326,7 +285,7 @@ export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
  * Insert multiple blocks
  */
 export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosition): Promise<Block[]> {
-  const data = await fetch<InsertBlocksResponse>(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<ItemsResponse<Block>>(buildUrl(ENDPOINTS.blocks), {
     method: "POST",
     body: JSON.stringify({ blocks, position }),
   });
@@ -339,7 +298,7 @@ export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosi
 export async function updateBlocks(
   updates: { id: string; markdown?: string; taskInfo?: Partial<TaskInfo> }[],
 ): Promise<Block[]> {
-  const data = await fetch<{ items: Block[] }>(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<ItemsResponse<Block>>(buildUrl(ENDPOINTS.blocks), {
     method: "PUT",
     body: JSON.stringify({ blocks: updates }),
   });
@@ -350,9 +309,20 @@ export async function updateBlocks(
  * Delete blocks
  */
 export async function deleteBlocks(blockIds: string[]): Promise<string[]> {
-  const data = await fetch<{ items: { id: string }[] }>(buildUrl(ENDPOINTS.blocks), {
+  const data = await fetch<IdsResponse>(buildUrl(ENDPOINTS.blocks), {
     method: "DELETE",
     body: JSON.stringify({ blockIds }),
+  });
+  return data.items.map((item) => item.id);
+}
+
+/**
+ * Move blocks to a new position
+ */
+export async function moveBlocks(blockIds: string[], position: BlockPosition): Promise<string[]> {
+  const data = await fetch<IdsResponse>(buildUrl(ENDPOINTS.move), {
+    method: "PUT",
+    body: JSON.stringify({ blockIds, position }),
   });
   return data.items.map((item) => item.id);
 }

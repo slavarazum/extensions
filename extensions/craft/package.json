@@ -14,6 +14,9 @@
     "Data"
   ],
   "license": "MIT",
+  "ai": {
+    "instructions": "This extension integrates with Craft.do document management. Documents are organized in folders (locations). Use list-folders first to discover available locations. Daily notes are date-based documents. Tasks have scopes: inbox (unscheduled), active (due), upcoming (scheduled), logbook (completed). Collections are structured data tables within documents. Always use get-collection-schema before adding items to understand the structure. Don't show entities IDs to users unless specifically requested."
+  },
   "commands": [
     {
       "name": "search-documents",
@@ -124,17 +127,132 @@
     {
       "name": "search-documents",
       "title": "Search Documents",
-      "description": "Interact with documents"
+      "description": "Search content across all documents in the Craft space using relevance-based ranking. Supports filtering by location, date ranges, and folders."
     },
     {
       "name": "search-blocks",
       "title": "Search Blocks",
-      "description": "Search content within blocks. Can search across all documents or within a specific document. Supports plain text and regex patterns. Returns matching blocks with context."
+      "description": "Search content within a specific document or page block. Supports plain text and regex patterns. Returns matching blocks with before/after context."
+    },
+    {
+      "name": "search-daily-notes",
+      "title": "Search Daily Notes",
+      "description": "Search content across multiple daily notes using relevance-based ranking. Supports date range filtering."
     },
     {
       "name": "use-tasks",
-      "title": "Use Tasks",
-      "description": "Manage and interact with"
+      "title": "Get Tasks",
+      "description": "Retrieve tasks from the Craft space. Filter by scope: active (due tasks), upcoming (scheduled), inbox, logbook (completed/cancelled), or document."
+    },
+    {
+      "name": "get-blocks",
+      "title": "Get Blocks",
+      "description": "Fetch blocks from a document or daily note. Use document ID to get document content, or date to get a daily note."
+    },
+    {
+      "name": "insert-blocks",
+      "title": "Insert Blocks",
+      "description": "Insert new blocks into a document or daily note. Supports text, headings, lists, tasks, and other block types."
+    },
+    {
+      "name": "update-blocks",
+      "title": "Update Blocks",
+      "description": "Update existing blocks in a document. Can modify content, task state, and other properties."
+    },
+    {
+      "name": "delete-blocks",
+      "title": "Delete Blocks",
+      "description": "Delete blocks from a document by their IDs."
+    },
+    {
+      "name": "move-blocks",
+      "title": "Move Blocks",
+      "description": "Move blocks to a new position within the same document or to a different document/daily note."
+    },
+    {
+      "name": "list-documents",
+      "title": "List Documents",
+      "description": "List documents in the Craft space. Filter by location, folder, or date ranges."
+    },
+    {
+      "name": "create-document",
+      "title": "Create Document",
+      "description": "Create a new document in the Craft space. Specify destination folder or location."
+    },
+    {
+      "name": "delete-documents",
+      "title": "Delete Documents",
+      "description": "Delete documents by moving them to trash. Documents already in trash are permanently deleted."
+    },
+    {
+      "name": "move-documents",
+      "title": "Move Documents",
+      "description": "Move documents between locations or folders. Can restore documents from trash."
+    },
+    {
+      "name": "list-folders",
+      "title": "List Folders",
+      "description": "List all folders in the Craft space with document counts and hierarchical structure."
+    },
+    {
+      "name": "create-folders",
+      "title": "Create Folders",
+      "description": "Create new folders at root level or nested inside existing folders."
+    },
+    {
+      "name": "delete-folders",
+      "title": "Delete Folders",
+      "description": "Delete folders. Contents are moved to parent folder or Unsorted."
+    },
+    {
+      "name": "move-folders",
+      "title": "Move Folders",
+      "description": "Move folders to root level or inside other folders."
+    },
+    {
+      "name": "create-task",
+      "title": "Create Task",
+      "description": "Create a new task in inbox or daily notes. Supports schedule dates and deadlines."
+    },
+    {
+      "name": "update-task",
+      "title": "Update Task",
+      "description": "Update a task's state, schedule date, or deadline. Marking as done/cancelled moves to logbook."
+    },
+    {
+      "name": "delete-task",
+      "title": "Delete Task",
+      "description": "Delete a task from inbox, logbook, or daily notes."
+    },
+    {
+      "name": "list-collections",
+      "title": "List Collections",
+      "description": "List all collections across documents or daily notes. Filter by document or date range."
+    },
+    {
+      "name": "get-collection-schema",
+      "title": "Get Collection Schema",
+      "description": "Get the schema of a collection including property definitions and types."
+    },
+    {
+      "name": "get-collection-items",
+      "title": "Get Collection Items",
+      "description": "Get all items from a collection with their properties and content."
+    },
+    {
+      "name": "add-collection-items",
+      "title": "Add Collection Items",
+      "description": "Add new items to a collection. Items must match the collection schema."
+    },
+    {
+      "name": "update-collection-items",
+      "title": "Update Collection Items",
+      "description": "Update existing items in a collection."
+    },
+    {
+      "name": "delete-collection-items",
+      "title": "Delete Collection Items",
+      "description": "Delete items from a collection including their nested content."
     }
   ],
   "preferences": [

@@ -15,6 +15,14 @@ interface Preferences {
   dailyNotesAndTasksApiUrl?: string;
 }
 
+/** Generic wrapper for list responses from Craft API */
+export interface ItemsResponse<T> {
+  items: T[];
+}
+
+/** Generic wrapper for ID-only responses */
+export type IdsResponse = ItemsResponse<{ id: string }>;
+
 // =============================================================================
 // Configuration
 // =============================================================================
@@ -45,20 +53,27 @@ export function getDailyNotesAndTasksApiUrl(): string {
 // URL Builder
 // =============================================================================
 
-type QueryValue = string | number | boolean | string[] | undefined;
+export type QueryParams = Record<string, string | number | boolean | string[] | undefined>;
 
 /**
  * Build a full API URL with query parameters.
  * Uses the Documents API URL from preferences by default.
  */
-export function buildUrl(endpoint: string, params?: Record<string, QueryValue>): string {
+export function buildUrl(endpoint: string, params?: QueryParams): string {
   return buildUrlWithBase(getDocumentsApiUrl(), endpoint, params);
+}
+
+/**
+ * Build a full API URL with query parameters using Daily Notes API.
+ */
+export function buildDailyNotesUrl(endpoint: string, params?: QueryParams): string {
+  return buildUrlWithBase(getDailyNotesAndTasksApiUrl(), endpoint, params);
 }
 
 /**
  * Internal helper to build URL with given base.
  */
-function buildUrlWithBase(baseUrl: string, endpoint: string, params?: Record<string, QueryValue>): string {
+function buildUrlWithBase(baseUrl: string, endpoint: string, params?: QueryParams): string {
   const url = `${baseUrl}${endpoint}`;
 
   if (!params) return url;
