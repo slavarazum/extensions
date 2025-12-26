@@ -1,4 +1,4 @@
-import { Form, ActionPanel, Action, showToast, Toast, popToRoot } from "@raycast/api";
+import { Form, ActionPanel, Action, showToast, Toast, popToRoot, Icon } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useDailyNote, type Block } from "./api";
 
@@ -37,14 +37,14 @@ export default function Command() {
         </ActionPanel>
       }
     >
-      <Form.TextArea id="content" title="Content" placeholder="Enter text to add to today's daily note..." autoFocus />
+      <Form.TextArea id="content" title="Content" placeholder="Enter text to add to today's daily note..." autoFocus enableMarkdown info="You can use Markdown to format the note. Pressing (⌘/ctrl + B) will add **bold** around the selected text, (⌘/ctrl + I) will make the selected text italic, etc." />
       <Form.Separator />
-      <Form.Dropdown id="listStyle" title="List Style" defaultValue="none">
-        <Form.Dropdown.Item value="none" title="None" />
-        <Form.Dropdown.Item value="bullet" title="Bullet" />
-        <Form.Dropdown.Item value="numbered" title="Numbered" />
-        <Form.Dropdown.Item value="task" title="Task" />
-        <Form.Dropdown.Item value="toggle" title="Toggle" />
+      <Form.Dropdown id="listStyle" title="List Style" defaultValue="none" storeValue={true}>
+        <Form.Dropdown.Item value="none" title="none" icon={Icon.Text} />
+        <Form.Dropdown.Item value="bullet" title="Bullet" icon={Icon.BulletPoints} />
+        <Form.Dropdown.Item value="numbered" title="Numbered" icon={Icon.NumberList} />
+        <Form.Dropdown.Item value="task" title="Task" icon={Icon.CheckCircle} />
+        <Form.Dropdown.Item value="toggle" title="Toggle" icon={Icon.ChevronRightSmall} />
       </Form.Dropdown>
     </Form>
   );

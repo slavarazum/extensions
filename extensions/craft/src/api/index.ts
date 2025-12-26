@@ -88,6 +88,7 @@ export {
   type SearchBlocksParams,
   type InsertBlockParams,
   type UseBlocksResult,
+  type UseBlocksOptions,
   type UseBlockSearchResult,
   type UseDailyNoteResult,
   // Hooks
