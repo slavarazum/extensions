@@ -3,7 +3,7 @@
   "name": "craft",
   "title": "Craft",
   "description": "Craft.do integration with API & MCP.",
-  "icon": "extension-icon.png",
+  "icon": "icon.png",
   "author": "slavarazum",
   "platforms": [
     "macOS",
