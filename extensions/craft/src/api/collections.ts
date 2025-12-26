@@ -65,13 +65,12 @@ export interface ListCollectionsParams {
  * List all collections
  */
 export async function listCollections(params?: ListCollectionsParams): Promise<Collection[]> {
-  const data = await fetch<ItemsResponse<Collection>>(
-    buildUrl("/collections", {
-      startDate: params?.startDate,
-      endDate: params?.endDate,
-      documentFilterMode: params?.documentFilterMode,
-    }),
-  );
+  const url = await buildUrl("/collections", {
+    startDate: params?.startDate,
+    endDate: params?.endDate,
+    documentFilterMode: params?.documentFilterMode,
+  });
+  const data = await fetch<ItemsResponse<Collection>>(url);
   return data.items;
 }
 
@@ -82,16 +81,16 @@ export async function getCollectionSchema(
   collectionId: string,
   format: "schema" | "json-schema-items" = "json-schema-items",
 ): Promise<CollectionSchema> {
-  return fetch<CollectionSchema>(buildUrl(`/collections/${collectionId}/schema`, { format }));
+  const url = await buildUrl(`/collections/${collectionId}/schema`, { format });
+  return fetch<CollectionSchema>(url);
 }
 
 /**
  * Get collection items
  */
 export async function getCollectionItems(collectionId: string, maxDepth = -1): Promise<CollectionItem[]> {
-  const data = await fetch<ItemsResponse<CollectionItem>>(
-    buildUrl(`/collections/${collectionId}/items`, { maxDepth }),
-  );
+  const url = await buildUrl(`/collections/${collectionId}/items`, { maxDepth });
+  const data = await fetch<ItemsResponse<CollectionItem>>(url);
   return data.items;
 }
 
@@ -103,7 +102,8 @@ export async function addCollectionItems(
   items: { title: string; properties?: Record<string, unknown> }[],
   allowNewSelectOptions?: boolean,
 ): Promise<CollectionItem[]> {
-  const data = await fetch<ItemsResponse<CollectionItem>>(buildUrl(`/collections/${collectionId}/items`), {
+  const url = await buildUrl(`/collections/${collectionId}/items`);
+  const data = await fetch<ItemsResponse<CollectionItem>>(url, {
     method: "POST",
     body: JSON.stringify({
       items,
@@ -121,7 +121,8 @@ export async function updateCollectionItems(
   itemsToUpdate: { id: string; title?: string; properties?: Record<string, unknown> }[],
   allowNewSelectOptions?: boolean,
 ): Promise<CollectionItem[]> {
-  const data = await fetch<ItemsResponse<CollectionItem>>(buildUrl(`/collections/${collectionId}/items`), {
+  const url = await buildUrl(`/collections/${collectionId}/items`);
+  const data = await fetch<ItemsResponse<CollectionItem>>(url, {
     method: "PUT",
     body: JSON.stringify({
       itemsToUpdate,
@@ -135,7 +136,8 @@ export async function updateCollectionItems(
  * Delete collection items
  */
 export async function deleteCollectionItems(collectionId: string, idsToDelete: string[]): Promise<string[]> {
-  const data = await fetch<IdsResponse>(buildUrl(`/collections/${collectionId}/items`), {
+  const url = await buildUrl(`/collections/${collectionId}/items`);
+  const data = await fetch<IdsResponse>(url, {
     method: "DELETE",
     body: JSON.stringify({ idsToDelete }),
   });
