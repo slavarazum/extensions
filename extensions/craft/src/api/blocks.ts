@@ -85,7 +85,6 @@ export interface SearchMatch {
 
 const ENDPOINTS = {
   blocks: "/blocks",
-  markdown: "/markdown", // Used for Daily Notes API to insert content
   search: "/blocks/search",
   move: "/blocks/move",
 } as const;
@@ -126,6 +125,11 @@ export interface UseBlocksResult {
   revalidate: () => void;
 }
 
+export interface UseBlocksOptions {
+  /** If true, suppresses the default error toast (useful when 404 is expected) */
+  suppressErrorToast?: boolean;
+}
+
 /**
  * Fetch blocks from a document or daily note
  *
@@ -138,7 +142,7 @@ export interface UseBlocksResult {
  * const { blocks } = useBlocks({ date: "2024-01-15" });
  * ```
  */
-export function useBlocks(params: GetBlocksParams): UseBlocksResult {
+export function useBlocks(params: GetBlocksParams, options?: UseBlocksOptions): UseBlocksResult {
   const { documentsApiUrl, dailyNotesApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
   const hasTarget = Boolean(params.id || params.date);
   // Use Daily Notes API for date-based queries, Documents API for ID-based queries
@@ -147,7 +151,12 @@ export function useBlocks(params: GetBlocksParams): UseBlocksResult {
 
   const { data, isLoading, error, revalidate } = useFetch<Block>(
     buildUrlWithBaseUrl(baseUrl, ENDPOINTS.blocks, { ...params }),
-    { execute: shouldExecute, keepPreviousData: true },
+    {
+      execute: shouldExecute,
+      keepPreviousData: true,
+      // Suppress error toast if requested (e.g., for daily notes that might not exist)
+      onError: options?.suppressErrorToast ? () => {} : undefined,
+    },
   );
 
   return {
@@ -230,9 +239,16 @@ export interface UseDailyNoteResult {
 export function useDailyNote(date?: string): UseDailyNoteResult {
   const targetDate = date ?? new Date().toISOString().split("T")[0];
 
-  const { blocks, isLoading, error, revalidate } = useBlocks({
-    date: targetDate,
-  });
+  const { blocks, isLoading, error, revalidate } = useBlocks(
+    { date: targetDate },
+    // Daily notes might not exist yet, so suppress the default error toast
+    { suppressErrorToast: true },
+  );
+
+  // Daily note might not exist yet - treat 404 as empty, not an error
+  const isNotFoundError = error?.message?.includes("Not Found") || error?.message?.includes("404");
+  const effectiveError = isNotFoundError ? undefined : error;
+  const effectiveBlocks = isNotFoundError ? [] : blocks;
 
   const addContent = async (content: string, listStyle?: ListStyle): Promise<Block[]> => {
     const result = await insertBlock({
@@ -245,10 +261,10 @@ export function useDailyNote(date?: string): UseDailyNoteResult {
   };
 
   return {
-    blocks,
+    blocks: effectiveBlocks,
     isLoading,
     date: targetDate,
-    error,
+    error: effectiveError,
     revalidate,
     addContent,
   };
@@ -284,58 +300,39 @@ export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMa
  * Insert a block
  */
 export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
-  // Use Daily Notes API with /markdown endpoint if position contains a date, otherwise use Documents API with /blocks
+  // Use Daily Notes API for date-based positions, otherwise use Documents API
+  // Both use the /blocks endpoint with the same payload structure
   const isDailyNote = "date" in params.position;
   const url = isDailyNote
-    ? await buildDailyNotesUrl(ENDPOINTS.markdown)
+    ? await buildDailyNotesUrl(ENDPOINTS.blocks)
     : await buildUrl(ENDPOINTS.blocks);
 
-  if (isDailyNote) {
-    // Daily Notes API uses /markdown endpoint with different payload structure
-    const data = await fetch<ItemsResponse<Block>>(url, {
-      method: "POST",
-      body: JSON.stringify({
-        markdown: params.content,
-        position: params.position,
-      }),
-    });
-    return data.items;
-  } else {
-    const data = await fetch<ItemsResponse<Block>>(url, {
-      method: "POST",
-      body: JSON.stringify({
-        blocks: [{ type: "text", markdown: params.content, listStyle: params.listStyle ?? "none" }],
-        position: params.position,
-      }),
-    });
-    return data.items;
-  }
+  const data = await fetch<ItemsResponse<Block>>(url, {
+    method: "POST",
+    body: JSON.stringify({
+      blocks: [{ type: "text", markdown: params.content, listStyle: params.listStyle ?? "none" }],
+      position: params.position,
+    }),
+  });
+  return data.items;
 }
 
 /**
  * Insert multiple blocks
  */
 export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosition): Promise<Block[]> {
-  // Use Daily Notes API with /markdown endpoint if position contains a date, otherwise use Documents API with /blocks
+  // Use Daily Notes API for date-based positions, otherwise use Documents API
+  // Both use the /blocks endpoint with the same payload structure
   const isDailyNote = "date" in position;
+  const url = isDailyNote
+    ? await buildDailyNotesUrl(ENDPOINTS.blocks)
+    : await buildUrl(ENDPOINTS.blocks);
 
-  if (isDailyNote) {
-    // Daily Notes API uses /markdown endpoint - combine blocks into markdown
-    const markdown = blocks.map((b) => b.markdown || "").join("\n\n");
-    const url = await buildDailyNotesUrl(ENDPOINTS.markdown);
-    const data = await fetch<ItemsResponse<Block>>(url, {
-      method: "POST",
-      body: JSON.stringify({ markdown, position }),
-    });
-    return data.items;
-  } else {
-    const url = await buildUrl(ENDPOINTS.blocks);
-    const data = await fetch<ItemsResponse<Block>>(url, {
-      method: "POST",
-      body: JSON.stringify({ blocks, position }),
-    });
-    return data.items;
-  }
+  const data = await fetch<ItemsResponse<Block>>(url, {
+    method: "POST",
+    body: JSON.stringify({ blocks, position }),
+  });
+  return data.items;
 }
 
 /**
