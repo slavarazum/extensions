@@ -121,6 +121,13 @@
       "subtitle": "Craft",
       "description": "Create a new document in Craft",
       "mode": "view"
+    },
+    {
+      "name": "manage-spaces",
+      "title": "Manage Spaces",
+      "subtitle": "Craft",
+      "description": "Add, edit, and switch between Craft spaces",
+      "mode": "view"
     }
   ],
   "tools": [

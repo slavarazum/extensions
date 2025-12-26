@@ -8,7 +8,8 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, fetch, ItemsResponse, IdsResponse } from "./client";
+import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetch, ItemsResponse, IdsResponse } from "./client";
+import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
 // Types
@@ -84,6 +85,7 @@ export interface SearchMatch {
 
 const ENDPOINTS = {
   blocks: "/blocks",
+  markdown: "/markdown", // Used for Daily Notes API to insert content
   search: "/blocks/search",
   move: "/blocks/move",
 } as const;
@@ -137,16 +139,20 @@ export interface UseBlocksResult {
  * ```
  */
 export function useBlocks(params: GetBlocksParams): UseBlocksResult {
+  const { documentsApiUrl, dailyNotesApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
   const hasTarget = Boolean(params.id || params.date);
+  // Use Daily Notes API for date-based queries, Documents API for ID-based queries
+  const baseUrl = params.date ? dailyNotesApiUrl : documentsApiUrl;
+  const shouldExecute = hasTarget && !!baseUrl;
 
   const { data, isLoading, error, revalidate } = useFetch<Block>(
-    buildUrl(ENDPOINTS.blocks, { ...params }),
-    { execute: hasTarget, keepPreviousData: true },
+    buildUrlWithBaseUrl(baseUrl, ENDPOINTS.blocks, { ...params }),
+    { execute: shouldExecute, keepPreviousData: true },
   );
 
   return {
     blocks: data?.content ?? (data ? [data] : []),
-    isLoading: hasTarget ? isLoading : false,
+    isLoading: isLoadingSpace || (shouldExecute && isLoading),
     error,
     revalidate,
   };
@@ -177,10 +183,11 @@ export function useBlockSearch(
   pattern: string,
   options?: { beforeBlockCount?: number; afterBlockCount?: number },
 ): UseBlockSearchResult {
-  const shouldExecute = pattern.length > 0 && blockId.length > 0;
+  const { documentsApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
+  const shouldExecute = pattern.length > 0 && blockId.length > 0 && !!documentsApiUrl;
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<SearchMatch>>(
-    buildUrl(ENDPOINTS.search, {
+    buildUrlWithBaseUrl(documentsApiUrl, ENDPOINTS.search, {
       blockId,
       pattern,
       beforeBlockCount: options?.beforeBlockCount ?? 3,
@@ -191,7 +198,7 @@ export function useBlockSearch(
 
   return {
     matches: data?.items ?? [],
-    isLoading: shouldExecute ? isLoading : false,
+    isLoading: isLoadingSpace || (shouldExecute && isLoading),
     hasPattern: pattern.length > 0,
     error,
     revalidate,
@@ -255,7 +262,12 @@ export function useDailyNote(date?: string): UseDailyNoteResult {
  * Fetch blocks (for tools)
  */
 export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
-  const data = await fetch<Block>(buildUrl(ENDPOINTS.blocks, { ...params }));
+  // Use Daily Notes API if fetching by date, otherwise use Documents API
+  const isDailyNote = !!params.date;
+  const url = isDailyNote
+    ? await buildDailyNotesUrl(ENDPOINTS.blocks, { ...params })
+    : await buildUrl(ENDPOINTS.blocks, { ...params });
+  const data = await fetch<Block>(url);
   return data.content ?? [data];
 }
 
@@ -263,7 +275,8 @@ export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
  * Search blocks (for tools)
  */
 export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMatch[]> {
-  const data = await fetch<ItemsResponse<SearchMatch>>(buildUrl(ENDPOINTS.search, { ...params }));
+  const url = await buildUrl(ENDPOINTS.search, { ...params });
+  const data = await fetch<ItemsResponse<SearchMatch>>(url);
   return data.items;
 }
 
@@ -271,25 +284,58 @@ export async function searchBlocks(params: SearchBlocksParams): Promise<SearchMa
  * Insert a block
  */
 export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
-  const data = await fetch<ItemsResponse<Block>>(buildUrl(ENDPOINTS.blocks), {
-    method: "POST",
-    body: JSON.stringify({
-      blocks: [{ type: "text", markdown: params.content, listStyle: params.listStyle ?? "none" }],
-      position: params.position,
-    }),
-  });
-  return data.items;
+  // Use Daily Notes API with /markdown endpoint if position contains a date, otherwise use Documents API with /blocks
+  const isDailyNote = "date" in params.position;
+  const url = isDailyNote
+    ? await buildDailyNotesUrl(ENDPOINTS.markdown)
+    : await buildUrl(ENDPOINTS.blocks);
+
+  if (isDailyNote) {
+    // Daily Notes API uses /markdown endpoint with different payload structure
+    const data = await fetch<ItemsResponse<Block>>(url, {
+      method: "POST",
+      body: JSON.stringify({
+        markdown: params.content,
+        position: params.position,
+      }),
+    });
+    return data.items;
+  } else {
+    const data = await fetch<ItemsResponse<Block>>(url, {
+      method: "POST",
+      body: JSON.stringify({
+        blocks: [{ type: "text", markdown: params.content, listStyle: params.listStyle ?? "none" }],
+        position: params.position,
+      }),
+    });
+    return data.items;
+  }
 }
 
 /**
  * Insert multiple blocks
  */
 export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosition): Promise<Block[]> {
-  const data = await fetch<ItemsResponse<Block>>(buildUrl(ENDPOINTS.blocks), {
-    method: "POST",
-    body: JSON.stringify({ blocks, position }),
-  });
-  return data.items;
+  // Use Daily Notes API with /markdown endpoint if position contains a date, otherwise use Documents API with /blocks
+  const isDailyNote = "date" in position;
+
+  if (isDailyNote) {
+    // Daily Notes API uses /markdown endpoint - combine blocks into markdown
+    const markdown = blocks.map((b) => b.markdown || "").join("\n\n");
+    const url = await buildDailyNotesUrl(ENDPOINTS.markdown);
+    const data = await fetch<ItemsResponse<Block>>(url, {
+      method: "POST",
+      body: JSON.stringify({ markdown, position }),
+    });
+    return data.items;
+  } else {
+    const url = await buildUrl(ENDPOINTS.blocks);
+    const data = await fetch<ItemsResponse<Block>>(url, {
+      method: "POST",
+      body: JSON.stringify({ blocks, position }),
+    });
+    return data.items;
+  }
 }
 
 /**
@@ -298,7 +344,8 @@ export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosi
 export async function updateBlocks(
   updates: { id: string; markdown?: string; taskInfo?: Partial<TaskInfo> }[],
 ): Promise<Block[]> {
-  const data = await fetch<ItemsResponse<Block>>(buildUrl(ENDPOINTS.blocks), {
+  const url = await buildUrl(ENDPOINTS.blocks);
+  const data = await fetch<ItemsResponse<Block>>(url, {
     method: "PUT",
     body: JSON.stringify({ blocks: updates }),
   });
@@ -309,7 +356,8 @@ export async function updateBlocks(
  * Delete blocks
  */
 export async function deleteBlocks(blockIds: string[]): Promise<string[]> {
-  const data = await fetch<IdsResponse>(buildUrl(ENDPOINTS.blocks), {
+  const url = await buildUrl(ENDPOINTS.blocks);
+  const data = await fetch<IdsResponse>(url, {
     method: "DELETE",
     body: JSON.stringify({ blockIds }),
   });
@@ -320,7 +368,8 @@ export async function deleteBlocks(blockIds: string[]): Promise<string[]> {
  * Move blocks to a new position
  */
 export async function moveBlocks(blockIds: string[], position: BlockPosition): Promise<string[]> {
-  const data = await fetch<IdsResponse>(buildUrl(ENDPOINTS.move), {
+  const url = await buildUrl(ENDPOINTS.move);
+  const data = await fetch<IdsResponse>(url, {
     method: "PUT",
     body: JSON.stringify({ blockIds, position }),
   });

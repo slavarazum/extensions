@@ -4,16 +4,15 @@
  * Configuration and utilities for Craft Connect API.
  */
 
-import { getPreferenceValues } from "@raycast/api";
+import {
+  getCurrentSpace,
+  getDocumentsApiUrl,
+  getDailyNotesAndTasksApiUrl,
+} from "./spaces";
 
 // =============================================================================
 // Types
 // =============================================================================
-
-interface Preferences {
-  documentsApiUrl?: string;
-  dailyNotesAndTasksApiUrl?: string;
-}
 
 /** Generic wrapper for list responses from Craft API */
 export interface ItemsResponse<T> {
@@ -27,27 +26,7 @@ export type IdsResponse = ItemsResponse<{ id: string }>;
 // Configuration
 // =============================================================================
 
-/**
- * Get the Documents API URL from user preferences.
- */
-export function getDocumentsApiUrl(): string {
-  const preferences = getPreferenceValues<Preferences>();
-  if (!preferences.documentsApiUrl) {
-    throw new Error("Please configure the Documents API URL in extension preferences.");
-  }
-  return preferences.documentsApiUrl;
-}
-
-/**
- * Get the Daily Notes & Tasks API URL from user preferences.
- */
-export function getDailyNotesAndTasksApiUrl(): string {
-  const preferences = getPreferenceValues<Preferences>();
-  if (!preferences.dailyNotesAndTasksApiUrl) {
-    throw new Error("Please configure the Daily Notes & Tasks API URL in extension preferences.");
-  }
-  return preferences.dailyNotesAndTasksApiUrl;
-}
+export { getCurrentSpace, getDocumentsApiUrl, getDailyNotesAndTasksApiUrl };
 
 // =============================================================================
 // URL Builder
@@ -57,17 +36,25 @@ export type QueryParams = Record<string, string | number | boolean | string[] | 
 
 /**
  * Build a full API URL with query parameters.
- * Uses the Documents API URL from preferences by default.
  */
-export function buildUrl(endpoint: string, params?: QueryParams): string {
-  return buildUrlWithBase(getDocumentsApiUrl(), endpoint, params);
+export async function buildUrl(endpoint: string, params?: QueryParams): Promise<string> {
+  const baseUrl = await getDocumentsApiUrl();
+  return buildUrlWithBase(baseUrl, endpoint, params);
 }
 
 /**
  * Build a full API URL with query parameters using Daily Notes API.
  */
-export function buildDailyNotesUrl(endpoint: string, params?: QueryParams): string {
-  return buildUrlWithBase(getDailyNotesAndTasksApiUrl(), endpoint, params);
+export async function buildDailyNotesUrl(endpoint: string, params?: QueryParams): Promise<string> {
+  const baseUrl = await getDailyNotesAndTasksApiUrl();
+  return buildUrlWithBase(baseUrl, endpoint, params);
+}
+
+/**
+ * Build URL with a specific base URL (for hooks using useCurrentSpace).
+ */
+export function buildUrlWithBaseUrl(baseUrl: string, endpoint: string, params?: QueryParams): string {
+  return buildUrlWithBase(baseUrl, endpoint, params);
 }
 
 /**
@@ -114,7 +101,8 @@ export async function fetch<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Craft API error: ${response.status} ${response.statusText}`);
+    const errorText = await response.text().catch(() => "");
+    throw new Error(`Craft API error: ${response.status} ${response.statusText} - URL: ${url} - ${errorText}`);
   }
 
   return response.json();
