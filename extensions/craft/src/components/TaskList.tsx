@@ -193,6 +193,7 @@ export function TaskList({
                 onRefresh={revalidate}
                 extraActions={createAction}
                 isCompleting={isTaskCompleting(task.id)}
+                hideLocation
               />
             ))}
           </List.Section>
@@ -211,6 +212,7 @@ export function TaskList({
               onRefresh={revalidate}
               extraActions={createAction}
               isCompleting={isTaskCompleting(task.id)}
+              hideLocation={viewScope === "inbox"}
             />
           ))}
         </List.Section>
