@@ -1,7 +1,7 @@
 import { ActionPanel, Action, List, Icon, Color, Toast, showToast, confirmAlert, Alert } from "@raycast/api";
 import { useState, useCallback, useRef, useMemo } from "react";
 import { showFailureToast } from "@raycast/utils";
-import { useTasks, useTaskActions, blockLink, type Task } from "./api";
+import { useTasks, useTaskActions, blockLink, formatLocalDate, type Task } from "./api";
 
 /** Delay before removing completed task from list (ms) */
 const COMPLETE_ANIMATION_DELAY = 3000;
@@ -148,7 +148,7 @@ function TodayTaskItem({ task, isCompleting, onComplete, onReopen, onRefresh }: 
     : getStateIcon(task.taskInfo.state);
 
   const accessories: List.Item.Accessory[] = [];
-  const today = new Date().toISOString().split("T")[0];
+  const today = formatLocalDate(new Date());
 
   // Add schedule date (red if overdue)
   if (task.taskInfo.scheduleDate) {

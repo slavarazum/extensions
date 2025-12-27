@@ -1,5 +1,5 @@
 import { ActionPanel, Action, List, Icon, Color, confirmAlert, Alert } from "@raycast/api";
-import { blockLink, type Task } from "../api";
+import { blockLink, formatLocalDate, type Task } from "../api";
 
 export interface TaskListItemProps {
   task: Task;
@@ -101,7 +101,7 @@ export function TaskListItem({
 
 function buildAccessories(task: Task, hideLocation: boolean): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
-  const today = new Date().toISOString().split("T")[0];
+  const today = formatLocalDate(new Date());
 
   // Add schedule date (red if overdue)
   if (task.taskInfo.scheduleDate) {

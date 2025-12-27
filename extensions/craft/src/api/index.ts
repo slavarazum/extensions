@@ -6,7 +6,7 @@
  */
 
 // Client utilities (shared across domains)
-export { getDocumentsApiUrl, getDailyNotesAndTasksApiUrl, getCurrentSpace } from "./client";
+export { getDocumentsApiUrl, getDailyNotesAndTasksApiUrl, getCurrentSpace, formatLocalDate } from "./client";
 
 // Spaces management
 export {

@@ -1,7 +1,7 @@
 import { ActionPanel, Action, Form, Icon, Toast, showToast, useNavigation } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { createTask, type CreateTaskParams } from "../api";
+import { createTask, formatLocalDate, type CreateTaskParams } from "../api";
 
 interface CreateTaskFormProps {
   onTaskCreated: () => void;
@@ -29,10 +29,10 @@ export function CreateTaskForm({ onTaskCreated }: CreateTaskFormProps) {
       if (scheduleDate || deadlineDate) {
         taskParams.taskInfo = {};
         if (scheduleDate) {
-          taskParams.taskInfo.scheduleDate = scheduleDate.toISOString().split("T")[0];
+          taskParams.taskInfo.scheduleDate = formatLocalDate(scheduleDate);
         }
         if (deadlineDate) {
-          taskParams.taskInfo.deadlineDate = deadlineDate.toISOString().split("T")[0];
+          taskParams.taskInfo.deadlineDate = formatLocalDate(deadlineDate);
         }
       }
 

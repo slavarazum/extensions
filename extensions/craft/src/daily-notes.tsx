@@ -12,10 +12,13 @@ const DATE_RANGE_CONFIG: Record<DateRange, { title: string; days: number | null 
 };
 
 /**
- * Format a date as YYYY-MM-DD
+ * Format a date as YYYY-MM-DD in local timezone
  */
 function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -93,7 +96,7 @@ export default function Command() {
 
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterday = yesterdayDate.toISOString().split("T")[0];
+  const yesterday = formatDate(yesterdayDate);
 
   return (
     <List
