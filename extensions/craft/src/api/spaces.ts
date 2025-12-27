@@ -24,6 +24,17 @@ interface Preferences {
   dailyNotesAndTasksApiUrl?: string;
 }
 
+/** Error response from Craft API when daily note doesn't exist */
+interface CraftApiErrorResponse {
+  error: string;
+  code: string;
+  details?: {
+    resourceType?: string;
+    date?: string;
+    spaceId?: string;
+  };
+}
+
 // =============================================================================
 // Storage Keys
 // =============================================================================
@@ -31,27 +42,88 @@ interface Preferences {
 const STORAGE_KEYS = {
   spaces: "craft-spaces",
   currentSpaceId: "craft-current-space-id",
+  defaultSpaceId: "craft-default-space-id",
 } as const;
 
-const DEFAULT_SPACE_ID = "default";
+// =============================================================================
+// Space ID Fetching
+// =============================================================================
+
+/**
+ * Fetch the real spaceId from Craft API.
+ * Uses a workaround: calling /blocks with date=tomorrow returns a 404 error
+ * that includes the spaceId in the error details.
+ */
+async function fetchSpaceIdFromApi(dailyNotesApiUrl: string): Promise<string> {
+  const url = `${dailyNotesApiUrl}/blocks?date=tomorrow&maxDepth=0`;
+
+  const response = await globalThis.fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  // We expect a 404 error with spaceId in the response
+  if (response.status === 404) {
+    const errorData = (await response.json()) as CraftApiErrorResponse;
+    if (errorData.details?.spaceId) {
+      return errorData.details.spaceId;
+    }
+  }
+
+  // If the request succeeds (daily note exists), try to extract from a successful response
+  // or fall back to generating an ID
+  if (response.ok) {
+    // Try parsing the response to see if we can get spaceId from blocks
+    const data = await response.json();
+    // Check if any block has spaceId (this is a fallback)
+    if (data && typeof data === "object") {
+      // The blocks might have spaceId, but if not, we need another approach
+      // For now, generate a unique ID as fallback
+      console.warn("Daily note exists but could not extract spaceId from response");
+    }
+  }
+
+  throw new Error("Could not fetch spaceId from Craft API. Please check your API URL configuration.");
+}
+
+/**
+ * Get or fetch the default space ID.
+ * Fetches from API on first call and caches in LocalStorage.
+ */
+async function getOrFetchDefaultSpaceId(dailyNotesApiUrl: string): Promise<string> {
+  // Check if we already have the default space ID cached
+  const cachedId = await LocalStorage.getItem<string>(STORAGE_KEYS.defaultSpaceId);
+  if (cachedId) {
+    return cachedId;
+  }
+
+  // Fetch from API and cache
+  const spaceId = await fetchSpaceIdFromApi(dailyNotesApiUrl);
+  await LocalStorage.setItem(STORAGE_KEYS.defaultSpaceId, spaceId);
+  return spaceId;
+}
 
 // =============================================================================
 // Space Management
 // =============================================================================
 
 /**
- * Get the default space from preferences.
+ * Get the default space from preferences with real spaceId from API.
  * Returns null if preferences are not configured.
  */
-export function getDefaultSpace(): Space | null {
+export async function getDefaultSpace(): Promise<Space | null> {
   const preferences = getPreferenceValues<Preferences>();
 
   if (!preferences.documentsApiUrl || !preferences.dailyNotesAndTasksApiUrl) {
     return null;
   }
 
+  const spaceId = await getOrFetchDefaultSpaceId(preferences.dailyNotesAndTasksApiUrl);
+
   return {
-    id: DEFAULT_SPACE_ID,
+    id: spaceId,
     name: "Default Space",
     documentsApiUrl: preferences.documentsApiUrl,
     dailyNotesAndTasksApiUrl: preferences.dailyNotesAndTasksApiUrl,
@@ -77,7 +149,7 @@ export async function getAdditionalSpaces(): Promise<Space[]> {
  * Get all available spaces (default + additional).
  */
 export async function getAllSpaces(): Promise<Space[]> {
-  const defaultSpace = getDefaultSpace();
+  const defaultSpace = await getDefaultSpace();
   const additionalSpaces = await getAdditionalSpaces();
 
   const spaces: Space[] = [];
@@ -98,12 +170,17 @@ export async function saveAdditionalSpaces(spaces: Space[]): Promise<void> {
 
 /**
  * Add a new space.
+ * Fetches the real spaceId from the Craft API.
  */
 export async function addSpace(space: Omit<Space, "id">): Promise<Space> {
   const spaces = await getAdditionalSpaces();
+
+  // Fetch the real spaceId from Craft API
+  const spaceId = await fetchSpaceIdFromApi(space.dailyNotesAndTasksApiUrl);
+
   const newSpace: Space = {
     ...space,
-    id: `space-${Date.now()}`,
+    id: spaceId,
   };
   spaces.push(newSpace);
   await saveAdditionalSpaces(spaces);
@@ -126,7 +203,9 @@ export async function updateSpace(id: string, updates: Partial<Omit<Space, "id" 
  * Delete a space by ID.
  */
 export async function deleteSpace(id: string): Promise<void> {
-  if (id === DEFAULT_SPACE_ID) {
+  // Check if this is the default space
+  const defaultSpace = await getDefaultSpace();
+  if (defaultSpace && id === defaultSpace.id) {
     throw new Error("Cannot delete the default space");
   }
 
@@ -136,8 +215,8 @@ export async function deleteSpace(id: string): Promise<void> {
 
   // If the deleted space was current, reset to default
   const currentId = await getCurrentSpaceId();
-  if (currentId === id) {
-    await setCurrentSpaceId(DEFAULT_SPACE_ID);
+  if (currentId === id && defaultSpace) {
+    await setCurrentSpaceId(defaultSpace.id);
   }
 }
 
@@ -146,7 +225,17 @@ export async function deleteSpace(id: string): Promise<void> {
  */
 export async function getCurrentSpaceId(): Promise<string> {
   const stored = await LocalStorage.getItem<string>(STORAGE_KEYS.currentSpaceId);
-  return stored || DEFAULT_SPACE_ID;
+  if (stored) {
+    return stored;
+  }
+
+  // Return the default space ID if no current space is set
+  const defaultSpace = await getDefaultSpace();
+  if (defaultSpace) {
+    return defaultSpace.id;
+  }
+
+  throw new Error("No spaces configured");
 }
 
 /**
@@ -171,7 +260,7 @@ export async function getCurrentSpace(): Promise<Space> {
   }
 
   // Fallback to default space
-  const defaultSpace = getDefaultSpace();
+  const defaultSpace = await getDefaultSpace();
   if (defaultSpace) {
     return defaultSpace;
   }

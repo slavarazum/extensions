@@ -1,7 +1,7 @@
 import { ActionPanel, Action, Form, Icon, Toast, showToast, popToRoot, open } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { createDocument, openLink } from "./api";
+import { createDocument, getCurrentSpaceId, openLink } from "./api";
 
 type Destination = "unsorted" | "templates";
 
@@ -31,9 +31,8 @@ export default function Command() {
         message: docTitle,
         primaryAction: {
           title: "Open in Craft",
-          onAction: () => {
-            const link = openLink({ documentId: document.id, spaceId: document.spaceId });
-            open(link);
+          onAction: async () => {
+            open(openLink({ documentId: document.id, spaceId: await getCurrentSpaceId() }));
           },
         },
       });
