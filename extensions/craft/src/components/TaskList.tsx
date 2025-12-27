@@ -61,6 +61,78 @@ function sortGroups(groups: Map<string, Task[]>): [string, Task[]][] {
   });
 }
 
+/**
+ * Group upcoming tasks by time period: This Week, This Month, then by month name
+ */
+function groupTasksByTimePeriod(tasks: Task[]): [string, Task[]][] {
+  const groups = new Map<string, Task[]>();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Calculate end of this week (Sunday)
+  const endOfWeek = new Date(today);
+  const daysUntilSunday = 7 - today.getDay();
+  endOfWeek.setDate(today.getDate() + daysUntilSunday);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  // Calculate end of this month
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  for (const task of tasks) {
+    const scheduleDate = task.taskInfo.scheduleDate;
+    if (!scheduleDate) continue;
+
+    const taskDate = new Date(scheduleDate + "T00:00:00");
+    let groupKey: string;
+
+    if (taskDate <= endOfWeek) {
+      groupKey = "This Week";
+    } else if (taskDate <= endOfMonth) {
+      groupKey = "This Month";
+    } else {
+      // Group by month name (e.g., "January", "February 2026")
+      const monthName = taskDate.toLocaleDateString("en-US", { month: "long" });
+      const year = taskDate.getFullYear();
+      if (year === today.getFullYear()) {
+        groupKey = monthName;
+      } else {
+        groupKey = `${monthName} ${year}`;
+      }
+    }
+
+    if (!groups.has(groupKey)) {
+      groups.set(groupKey, []);
+    }
+    groups.get(groupKey)!.push(task);
+  }
+
+  // Sort groups in chronological order
+  const order = ["This Week", "This Month"];
+  const entries = Array.from(groups.entries());
+
+  return entries.sort(([a], [b]) => {
+    const aIndex = order.indexOf(a);
+    const bIndex = order.indexOf(b);
+
+    // Both are in the predefined order
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+    // Only a is in predefined order
+    if (aIndex !== -1) return -1;
+    // Only b is in predefined order
+    if (bIndex !== -1) return 1;
+
+    // Both are month names - parse and compare dates
+    const parseMonthGroup = (s: string) => {
+      const parts = s.split(" ");
+      const month = new Date(Date.parse(parts[0] + " 1, 2000")).getMonth();
+      const year = parts[1] ? parseInt(parts[1]) : new Date().getFullYear();
+      return new Date(year, month, 1);
+    };
+
+    return parseMonthGroup(a).getTime() - parseMonthGroup(b).getTime();
+  });
+}
+
 /** Delay before removing completed task from list (ms) */
 const COMPLETE_ANIMATION_DELAY = 3000;
 
@@ -93,17 +165,24 @@ export function TaskList({
   const viewScope: ViewScope = fixedScope ?? dynamicScope;
   const apiScope: TaskScope = SCOPE_CONFIG[viewScope].apiScope ?? (viewScope as TaskScope);
   const config = SCOPE_CONFIG[viewScope];
-  const isGroupedView = viewScope === "today";
+  const isLocationGroupedView = viewScope === "today";
+  const isTimeGroupedView = viewScope === "upcoming";
 
   const { tasks, isLoading, revalidate } = useTasks({ scope: apiScope });
   const actions = useTaskActions();
   const { handleReopen, handleCancel, handleDelete } = useTaskHandlers(revalidate);
 
-  // Group tasks for "today" view
-  const groupedTasks = useMemo(() => {
-    if (!isGroupedView) return null;
+  // Group tasks for "today" view (by location)
+  const locationGroupedTasks = useMemo(() => {
+    if (!isLocationGroupedView) return null;
     return sortGroups(groupTasksByLocation(tasks));
-  }, [tasks, isGroupedView]);
+  }, [tasks, isLocationGroupedView]);
+
+  // Group tasks for "upcoming" view (by time period)
+  const timeGroupedTasks = useMemo(() => {
+    if (!isTimeGroupedView) return null;
+    return groupTasksByTimePeriod(tasks);
+  }, [tasks, isTimeGroupedView]);
 
   // Check if a task is completing (use ref for immediate access, state for re-renders)
   const isTaskCompleting = useCallback(
@@ -178,9 +257,9 @@ export function TaskList({
       }
       actions={createAction ? <ActionPanel>{createAction}</ActionPanel> : undefined}
     >
-      {isGroupedView && groupedTasks ? (
-        // Grouped view for "today"
-        groupedTasks.map(([groupKey, groupTasks]) => (
+      {isLocationGroupedView && locationGroupedTasks ? (
+        // Grouped view for "today" (by location)
+        locationGroupedTasks.map(([groupKey, groupTasks]) => (
           <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
             {groupTasks.map((task) => (
               <TaskListItem
@@ -194,6 +273,25 @@ export function TaskList({
                 extraActions={createAction}
                 isCompleting={isTaskCompleting(task.id)}
                 hideLocation
+              />
+            ))}
+          </List.Section>
+        ))
+      ) : isTimeGroupedView && timeGroupedTasks ? (
+        // Grouped view for "upcoming" (by time period)
+        timeGroupedTasks.map(([groupKey, groupTasks]) => (
+          <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
+            {groupTasks.map((task) => (
+              <TaskListItem
+                key={task.id}
+                task={task}
+                onComplete={() => handleCompleteWithAnimation(task)}
+                onReopen={() => handleReopen(task)}
+                onCancel={allowMutations ? () => handleCancel(task) : undefined}
+                onDelete={allowMutations ? () => handleDelete(task) : undefined}
+                onRefresh={revalidate}
+                extraActions={createAction}
+                isCompleting={isTaskCompleting(task.id)}
               />
             ))}
           </List.Section>
