@@ -1,7 +1,7 @@
-import { ActionPanel, Action, List, Icon, Color, useNavigation, Alert, confirmAlert, showToast, Toast } from "@raycast/api";
+import { ActionPanel, Action, List, Detail, Icon, Color, useNavigation, Alert, confirmAlert, showToast, Toast } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { useDocuments, useBlocks, deleteDocuments, type Block, type Document } from "./api";
+import { useDocuments, useBlocks, deleteDocuments, type Document } from "./api";
 
 type DateRange = "month" | "3months" | "all";
 
@@ -130,7 +130,7 @@ export default function Command() {
                   <Action
                     title="View Daily Note"
                     icon={Icon.Eye}
-                    onAction={() => push(<DailyNoteDetail note={{ id: doc.id, date: noteDate, link: doc.clickableLink }} />)}
+                    onAction={() => push(<DailyNoteMarkdownDetail note={{ id: doc.id, date: noteDate, link: doc.clickableLink }} />)}
                   />
                   {doc.clickableLink && <Action.Open title="Open in Craft" target={doc.clickableLink} icon={Icon.AppWindow} />}
                   {doc.clickableLink && <Action.CopyToClipboard title="Copy Deep Link" content={doc.clickableLink} icon={Icon.Link} />}
@@ -185,148 +185,40 @@ interface DailyNoteDetailProps {
   note: SelectedNote;
 }
 
-function DailyNoteDetail({ note }: DailyNoteDetailProps) {
+function DailyNoteMarkdownDetail({ note }: DailyNoteDetailProps) {
   const { pop } = useNavigation();
-  // Fetch blocks using document ID
   const { blocks, isLoading, revalidate } = useBlocks({ id: note.id });
 
-  const contentBlocks = blocks.filter((block) => block.markdown?.trim());
+  // Join markdown content from blocks directly
+  const markdown = blocks
+    .filter((block) => block.markdown?.trim())
+    .map((block) => block.markdown)
+    .join("\n\n");
 
   return (
-    <List
+    <Detail
       isLoading={isLoading}
       navigationTitle={getDateLabel(note.date)}
-      searchBarPlaceholder="Filter daily note content..."
-    >
-      <List.Section title={getDateLabel(note.date)} subtitle={`${contentBlocks.length} items`}>
-        {contentBlocks.map((block) => (
-          <BlockListItem key={block.id} block={block} craftLink={note.link} onRefresh={revalidate} onBack={pop} />
-        ))}
-      </List.Section>
-      {!isLoading && contentBlocks.length === 0 && (
-        <List.EmptyView
-          icon={Icon.Calendar}
-          title="Empty daily note"
-          description={`No content in ${getDateLabel(note.date).toLowerCase()}'s daily note`}
-          actions={
-            <ActionPanel>
-              <Action title="Go Back" icon={Icon.ArrowLeft} onAction={pop} />
-              {note.link && <Action.Open title="Open in Craft" target={note.link} icon={Icon.AppWindow} />}
-              {note.link && <Action.CopyToClipboard title="Copy Deep Link" content={note.link} icon={Icon.Link} />}
-            </ActionPanel>
-          }
-        />
-      )}
-    </List>
-  );
-}
-
-interface BlockListItemProps {
-  block: Block;
-  craftLink?: string;
-  onRefresh: () => void;
-  onBack: () => void;
-}
-
-function BlockListItem({ block, craftLink, onRefresh, onBack }: BlockListItemProps) {
-  const icon = getBlockIcon(block);
-  const accessories = getBlockAccessories(block);
-
-  return (
-    <List.Item
-      icon={icon}
-      title={cleanMarkdown(block.markdown || "")}
-      accessories={accessories}
+      markdown={markdown || `*No content in ${getDateLabel(note.date)}'s daily note*`}
       actions={
         <ActionPanel>
-          <ActionPanel.Section>
-            {craftLink && <Action.Open title="Open in Craft" target={craftLink} icon={Icon.AppWindow} />}
-            {craftLink && <Action.CopyToClipboard title="Copy Deep Link" content={craftLink} icon={Icon.Link} />}
-            <Action
-              title="Go Back"
-              icon={Icon.ArrowLeft}
-              onAction={onBack}
-              shortcut={{ modifiers: ["cmd"], key: "[" }}
-            />
-          </ActionPanel.Section>
-          <ActionPanel.Section>
-            <Action.CopyToClipboard title="Copy Content" content={block.markdown || ""} />
-            <Action
-              title="Refresh"
-              icon={Icon.ArrowClockwise}
-              onAction={onRefresh}
-              shortcut={{ modifiers: ["cmd"], key: "r" }}
-            />
-          </ActionPanel.Section>
+          {note.link && <Action.Open title="Open in Craft" target={note.link} icon={Icon.AppWindow} />}
+          {note.link && <Action.CopyToClipboard title="Copy Deep Link" content={note.link} icon={Icon.Link} />}
+          <Action
+            title="Go Back"
+            icon={Icon.ArrowLeft}
+            onAction={pop}
+            shortcut={{ modifiers: ["cmd"], key: "[" }}
+          />
+          <Action
+            title="Refresh"
+            icon={Icon.ArrowClockwise}
+            onAction={revalidate}
+            shortcut={{ modifiers: ["cmd"], key: "r" }}
+          />
+          <Action.CopyToClipboard title="Copy Markdown" content={markdown} shortcut={{ modifiers: ["cmd"], key: "c" }} />
         </ActionPanel>
       }
     />
   );
-}
-
-function getBlockIcon(block: Block): { source: Icon; tintColor?: Color } {
-  if (block.listStyle === "task" && block.taskInfo) {
-    switch (block.taskInfo.state) {
-      case "done":
-        return { source: Icon.CheckCircle, tintColor: Color.Green };
-      case "canceled":
-        return { source: Icon.XMarkCircle, tintColor: Color.SecondaryText };
-      default:
-        return { source: Icon.Circle };
-    }
-  }
-
-  switch (block.listStyle) {
-    case "bullet":
-      return { source: Icon.Dot };
-    case "numbered":
-      return { source: Icon.List };
-    case "toggle":
-      return { source: Icon.ChevronRight };
-    default:
-      break;
-  }
-
-  switch (block.textStyle) {
-    case "h1":
-    case "h2":
-    case "h3":
-    case "h4":
-      return { source: Icon.Text };
-    case "card":
-    case "page":
-      return { source: Icon.Document };
-    default:
-      return { source: Icon.Minus };
-  }
-}
-
-function getBlockAccessories(block: Block): List.Item.Accessory[] {
-  const accessories: List.Item.Accessory[] = [];
-
-  if (block.taskInfo?.scheduleDate) {
-    accessories.push({ date: new Date(block.taskInfo.scheduleDate), tooltip: "Scheduled" });
-  }
-  if (block.taskInfo?.deadlineDate) {
-    accessories.push({
-      tag: { value: block.taskInfo.deadlineDate, color: Color.Red },
-      tooltip: "Deadline",
-    });
-  }
-
-  if (block.textStyle && ["h1", "h2", "h3", "h4"].includes(block.textStyle)) {
-    accessories.push({ tag: block.textStyle.toUpperCase() });
-  }
-
-  return accessories;
-}
-
-function cleanMarkdown(markdown: string): string {
-  return markdown
-    .replace(/^- \[.\] /, "")
-    .replace(/^[-*] /, "")
-    .replace(/^\d+\. /, "")
-    .replace(/\*\*/g, "")
-    .replace(/<[^>]+>/g, "")
-    .trim();
 }
