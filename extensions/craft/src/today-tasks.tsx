@@ -1,4 +1,4 @@
-import { ActionPanel, Action, List, Icon, Color, Toast, showToast } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, Color, Toast, showToast, confirmAlert, Alert } from "@raycast/api";
 import { useState, useCallback, useRef, useMemo } from "react";
 import { showFailureToast } from "@raycast/utils";
 import { useTasks, useTaskActions, blockLink, type Task } from "./api";
@@ -190,7 +190,17 @@ function TodayTaskItem({ task, isCompleting, onComplete, onReopen, onRefresh }: 
               <Action
                 title="Complete"
                 icon={{ source: Icon.CheckCircle, tintColor: Color.Green }}
-                onAction={onComplete}
+                onAction={async () => {
+                  if (
+                    await confirmAlert({
+                      title: "Complete Task",
+                      message: "Are you sure you want to mark this task as complete?",
+                      primaryAction: { title: "Complete", style: Alert.ActionStyle.Default },
+                    })
+                  ) {
+                    onComplete();
+                  }
+                }}
               />
             ) : (
               <Action title="Reopen" icon={Icon.Circle} onAction={onReopen} />
