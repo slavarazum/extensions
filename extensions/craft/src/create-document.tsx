@@ -10,7 +10,7 @@ export default function Command() {
   const [destination, setDestination] = useState<Destination>("unsorted");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (openAfterCreate: boolean) => {
     const docTitle = title.trim();
     if (!docTitle) {
       await showToast({ style: Toast.Style.Failure, title: "Title is required" });
@@ -25,17 +25,27 @@ export default function Command() {
         destination: { destination },
       });
 
-      await showToast({
-        style: Toast.Style.Success,
-        title: "Document created",
-        message: docTitle,
-        primaryAction: {
-          title: "Open in Craft",
-          onAction: async () => {
-            open(openLink({ documentId: document.id, spaceId: await getCurrentSpaceId() }));
+      const spaceId = await getCurrentSpaceId();
+      const link = openLink({ documentId: document.id, spaceId });
+
+      if (openAfterCreate) {
+        await open(link);
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Document created and opened",
+          message: docTitle,
+        });
+      } else {
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Document created",
+          message: docTitle,
+          primaryAction: {
+            title: "Open in Craft",
+            onAction: () => open(link),
           },
-        },
-      });
+        });
+      }
 
       await popToRoot();
     } catch (error) {
@@ -50,7 +60,12 @@ export default function Command() {
       isLoading={isSubmitting}
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Create Document" icon={Icon.Plus} onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Create Document" icon={Icon.Plus} onSubmit={() => handleSubmit(false)} />
+          <Action.SubmitForm
+            title="Create and Open in Craft"
+            icon={Icon.AppWindowSidebarRight}
+            onSubmit={() => handleSubmit(true)}
+          />
         </ActionPanel>
       }
     >
