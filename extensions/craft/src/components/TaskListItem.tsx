@@ -11,6 +11,8 @@ export interface TaskListItemProps {
   extraActions?: React.ReactNode;
   /** Show as completing (green checkmark, will be removed) */
   isCompleting?: boolean;
+  /** Hide the location badge (e.g., when viewing inbox tasks) */
+  hideLocation?: boolean;
 }
 
 export function TaskListItem({
@@ -22,11 +24,12 @@ export function TaskListItem({
   onRefresh,
   extraActions,
   isCompleting = false,
+  hideLocation = false,
 }: TaskListItemProps) {
   const stateIcon = isCompleting
     ? { source: Icon.CheckCircle, tintColor: Color.Green }
     : getStateIcon(task.taskInfo.state);
-  const accessories = buildAccessories(task);
+  const accessories = buildAccessories(task, hideLocation);
 
   return (
     <List.Item
@@ -96,7 +99,7 @@ export function TaskListItem({
   );
 }
 
-function buildAccessories(task: Task): List.Item.Accessory[] {
+function buildAccessories(task: Task, hideLocation: boolean): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
   const today = new Date().toISOString().split("T")[0];
 
@@ -131,10 +134,12 @@ function buildAccessories(task: Task): List.Item.Accessory[] {
   }
 
   // Add location info (always last)
-  if (task.location?.title) {
-    accessories.push({ tag: { value: task.location.title }, tooltip: "Document" });
-  } else if (task.location?.type === "inbox") {
-    accessories.push({ tag: { value: "Inbox", color: Color.Blue }, tooltip: "Location" });
+  if (!hideLocation) {
+    if (task.location?.title) {
+      accessories.push({ tag: { value: task.location.title }, tooltip: "Document" });
+    } else if (task.location?.type === "inbox") {
+      accessories.push({ tag: { value: "Inbox", color: Color.Blue }, tooltip: "Location" });
+    }
   }
 
   return accessories;
