@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetch, ItemsResponse, IdsResponse } from "./client";
+import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetch, formatLocalDate, ItemsResponse, IdsResponse } from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -237,7 +237,7 @@ export interface UseDailyNoteResult {
  * ```
  */
 export function useDailyNote(date?: string): UseDailyNoteResult {
-  const targetDate = date ?? new Date().toISOString().split("T")[0];
+  const targetDate = date ?? formatLocalDate(new Date());
 
   const { blocks, isLoading, error, revalidate } = useBlocks(
     { date: targetDate },

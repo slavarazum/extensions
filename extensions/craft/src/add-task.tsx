@@ -1,7 +1,7 @@
 import { ActionPanel, Action, Form, Icon, Toast, showToast, LaunchProps } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState, useEffect } from "react";
-import { createTask, type CreateTaskParams } from "./api";
+import { createTask, formatLocalDate, type CreateTaskParams } from "./api";
 
 interface AddTaskArguments {
   task: string;
@@ -71,10 +71,10 @@ export default function Command(props: LaunchProps<{ arguments: AddTaskArguments
       if (scheduleDate || deadlineDate) {
         taskParams.taskInfo = {};
         if (scheduleDate) {
-          taskParams.taskInfo.scheduleDate = scheduleDate.toISOString().split("T")[0];
+          taskParams.taskInfo.scheduleDate = formatLocalDate(scheduleDate);
         }
         if (deadlineDate) {
-          taskParams.taskInfo.deadlineDate = deadlineDate.toISOString().split("T")[0];
+          taskParams.taskInfo.deadlineDate = formatLocalDate(deadlineDate);
         }
       }
 
