@@ -115,9 +115,15 @@ function buildAccessories(task: Task): List.Item.Accessory[] {
     }
   }
 
-  // Add deadline
+  // Add deadline with flag icon (matching Craft app style)
   if (task.taskInfo.deadlineDate) {
-    accessories.push({ tag: { value: task.taskInfo.deadlineDate, color: Color.Red }, tooltip: "Deadline" });
+    const deadlineFormatted = formatDeadlineDate(task.taskInfo.deadlineDate, today);
+    const isToday = task.taskInfo.deadlineDate === today;
+    accessories.push({
+      icon: { source: Icon.Flag, tintColor: isToday ? Color.Blue : undefined },
+      tag: { value: deadlineFormatted, color: isToday ? Color.Blue : undefined },
+      tooltip: "Deadline",
+    });
   }
 
   // Add repeat indicator
@@ -152,4 +158,23 @@ function cleanMarkdown(markdown: string): string {
     .replace(/\*\*/g, "")
     .replace(/<[^>]+>/g, "")
     .trim();
+}
+
+function formatDeadlineDate(dateStr: string, today: string): string {
+  const deadline = new Date(dateStr + "T00:00:00");
+  const todayDate = new Date(today + "T00:00:00");
+
+  const diffTime = deadline.getTime() - todayDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return "Today";
+  } else if (diffDays === 1) {
+    return "Tomorrow";
+  } else if (diffDays === -1) {
+    return "Yesterday";
+  } else {
+    // Format as "Dec 31" style
+    return deadline.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
 }
