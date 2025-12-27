@@ -12,7 +12,7 @@ const SCOPE_CONFIG: Record<ViewScope, { title: string; icon: Icon; description: 
   inbox: { title: "Inbox", icon: Icon.Tray, description: "No inbox tasks found" },
   today: { title: "Today", icon: Icon.Sun, description: "No tasks for today", apiScope: "active" },
   upcoming: { title: "Upcoming", icon: Icon.Calendar, description: "No upcoming tasks found" },
-  active: { title: "All", icon: Icon.List, description: "No active tasks" },
+  active: { title: "Active", icon: Icon.List, description: "No active tasks" },
   logbook: { title: "Logbook", icon: Icon.CheckCircle, description: "No completed or canceled tasks found" },
   document: { title: "Document", icon: Icon.Document, description: "No document tasks found" },
 };
@@ -250,7 +250,7 @@ export function TaskList({
             onChange={(value) => setDynamicScope(value as ViewScope)}
           >
             {SCOPE_OPTIONS.map((s) => (
-              <List.Dropdown.Item key={s} title={SCOPE_CONFIG[s].title} value={s} icon={SCOPE_CONFIG[s].icon} />
+              <List.Dropdown.Item key={s} title={SCOPE_CONFIG[s].title} value={s} />
             ))}
           </List.Dropdown>
         ) : undefined
@@ -298,22 +298,20 @@ export function TaskList({
         ))
       ) : (
         // Flat list view for other scopes
-        <List.Section title={`${config.title} Tasks`} subtitle={`${tasks.length}`}>
-          {tasks.map((task) => (
-            <TaskListItem
-              key={task.id}
-              task={task}
-              onComplete={() => handleCompleteWithAnimation(task)}
-              onReopen={() => handleReopen(task)}
-              onCancel={allowMutations ? () => handleCancel(task) : undefined}
-              onDelete={allowMutations ? () => handleDelete(task) : undefined}
-              onRefresh={revalidate}
-              extraActions={createAction}
-              isCompleting={isTaskCompleting(task.id)}
-              hideLocation={viewScope === "inbox"}
-            />
-          ))}
-        </List.Section>
+        tasks.map((task) => (
+          <TaskListItem
+            key={task.id}
+            task={task}
+            onComplete={() => handleCompleteWithAnimation(task)}
+            onReopen={() => handleReopen(task)}
+            onCancel={allowMutations ? () => handleCancel(task) : undefined}
+            onDelete={allowMutations ? () => handleDelete(task) : undefined}
+            onRefresh={revalidate}
+            extraActions={createAction}
+            isCompleting={isTaskCompleting(task.id)}
+            hideLocation={viewScope === "inbox"}
+          />
+        ))
       )}
       {!isLoading && tasks.length === 0 && (
         <List.EmptyView
