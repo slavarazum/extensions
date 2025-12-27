@@ -103,15 +103,14 @@ function buildAccessories(task: Task): List.Item.Accessory[] {
   // Add schedule date (red if overdue)
   if (task.taskInfo.scheduleDate) {
     const isOverdue = task.taskInfo.state === "todo" && task.taskInfo.scheduleDate < today;
+    const scheduleFormatted = formatScheduleDate(task.taskInfo.scheduleDate, today);
     if (isOverdue) {
-      const overdueDate = new Date(task.taskInfo.scheduleDate);
-      const formatted = overdueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
       accessories.push({
-        tag: { value: formatted, color: Color.Red },
+        tag: { value: scheduleFormatted, color: Color.Red },
         tooltip: "Overdue",
       });
     } else {
-      accessories.push({ date: new Date(task.taskInfo.scheduleDate), tooltip: "Scheduled" });
+      accessories.push({ text: scheduleFormatted, tooltip: "Scheduled" });
     }
   }
 
@@ -176,5 +175,24 @@ function formatDeadlineDate(dateStr: string, today: string): string {
   } else {
     // Format as "Dec 31" style
     return deadline.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+}
+
+function formatScheduleDate(dateStr: string, today: string): string {
+  const schedule = new Date(dateStr + "T00:00:00");
+  const todayDate = new Date(today + "T00:00:00");
+
+  const diffTime = schedule.getTime() - todayDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return "Today";
+  } else if (diffDays === 1) {
+    return "Tomorrow";
+  } else if (diffDays === -1) {
+    return "Yesterday";
+  } else {
+    // Format as "Dec 28" style
+    return schedule.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 }
