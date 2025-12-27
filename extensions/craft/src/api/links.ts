@@ -51,7 +51,7 @@ export function openLink(params: OpenLinkParams): string {
     searchParams.set("blockId", params.blockId);
   }
   if (params.documentId) {
-    searchParams.set("documentId", params.documentId);
+    searchParams.set("blockId", params.documentId);
   }
   if (params.spaceId) {
     searchParams.set("spaceId", params.spaceId);
