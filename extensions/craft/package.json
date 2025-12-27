@@ -33,8 +33,8 @@
       "mode": "view"
     },
     {
-      "name": "show-daily-notes",
-      "title": "Browse Daily Notes",
+      "name": "daily-notes",
+      "title": "Daily Notes",
       "subtitle": "Craft",
       "description": "View and navigate your daily notes",
       "mode": "view"
@@ -47,42 +47,42 @@
       "mode": "view"
     },
     {
-      "name": "show-tasks",
-      "title": "Browse Tasks",
+      "name": "tasks",
+      "title": "Tasks",
       "subtitle": "Craft",
       "description": "View and manage all tasks",
       "mode": "view"
     },
     {
-      "name": "show-upcoming-tasks",
+      "name": "upcoming-tasks",
       "title": "Upcoming Tasks",
       "subtitle": "Craft",
       "description": "View scheduled and upcoming tasks",
       "mode": "view"
     },
     {
-      "name": "show-inbox-tasks",
+      "name": "inbox-tasks",
       "title": "Inbox Tasks",
       "subtitle": "Craft",
       "description": "View tasks in your inbox",
       "mode": "view"
     },
     {
-      "name": "show-logbook-tasks",
+      "name": "logbook-tasks",
       "title": "Task Logbook",
       "subtitle": "Craft",
       "description": "View completed and canceled tasks",
       "mode": "view"
     },
     {
-      "name": "show-recently-deleted",
+      "name": "recently-deleted",
       "title": "Recently Deleted",
       "subtitle": "Craft",
       "description": "View and permanently delete trashed documents",
       "mode": "view"
     },
     {
-      "name": "show-today-tasks",
+      "name": "today-tasks",
       "title": "Today's Tasks",
       "subtitle": "Craft",
       "description": "View today's tasks grouped by location",

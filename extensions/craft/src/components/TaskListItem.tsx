@@ -1,4 +1,4 @@
-import { ActionPanel, Action, List, Icon, Color } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, Color, confirmAlert, Alert } from "@raycast/api";
 import { blockLink, type Task } from "../api";
 
 export interface TaskListItemProps {
@@ -41,7 +41,17 @@ export function TaskListItem({
                 <Action
                   title="Complete"
                   icon={{ source: Icon.CheckCircle, tintColor: Color.Green }}
-                  onAction={onComplete}
+                  onAction={async () => {
+                    if (
+                      await confirmAlert({
+                        title: "Complete Task",
+                        message: "Are you sure you want to mark this task as complete?",
+                        primaryAction: { title: "Complete", style: Alert.ActionStyle.Default },
+                      })
+                    ) {
+                      onComplete();
+                    }
+                  }}
                 />
                 {onCancel && (
                   <Action
