@@ -239,9 +239,6 @@ function SearchResultItem({
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            {document?.clickableLink && (
-              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
-            )}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
@@ -252,8 +249,10 @@ function SearchResultItem({
                   clickableLink={document?.clickableLink}
                 />
               }
-              shortcut={{ modifiers: ["cmd"], key: "y" }}
             />
+            {document?.clickableLink && (
+              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
+            )}
             <Action.CopyToClipboard
               title="Copy Document ID"
               content={searchMatch.documentId}
@@ -301,7 +300,6 @@ function RecentDocumentItem({ document, onDelete }: { document: Document; onDele
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            {document.clickableLink && <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
@@ -312,8 +310,8 @@ function RecentDocumentItem({ document, onDelete }: { document: Document; onDele
                   clickableLink={document.clickableLink}
                 />
               }
-              shortcut={{ modifiers: ["cmd"], key: "y" }}
             />
+            {document.clickableLink && <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />}
             <Action.CopyToClipboard
               title="Copy Document ID"
               content={document.id}

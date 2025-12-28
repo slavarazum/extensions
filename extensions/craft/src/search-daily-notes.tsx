@@ -217,9 +217,6 @@ function SearchResultItem({
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            {document?.clickableLink && (
-              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
-            )}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
@@ -230,8 +227,10 @@ function SearchResultItem({
                   clickableLink={document?.clickableLink}
                 />
               }
-              shortcut={{ modifiers: ["cmd"], key: "y" }}
             />
+            {document?.clickableLink && (
+              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
+            )}
             {document?.clickableLink && (
               <Action.CopyToClipboard
                 title="Copy Deep Link"
@@ -255,9 +254,6 @@ function DailyNoteItem({ document }: { document: Document }) {
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            {document.clickableLink && (
-              <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />
-            )}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
@@ -268,8 +264,10 @@ function DailyNoteItem({ document }: { document: Document }) {
                   clickableLink={document.clickableLink}
                 />
               }
-              shortcut={{ modifiers: ["cmd"], key: "y" }}
             />
+            {document.clickableLink && (
+              <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />
+            )}
             {document.clickableLink && (
               <Action.CopyToClipboard
                 title="Copy Deep Link"
