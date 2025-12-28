@@ -4,6 +4,7 @@ import { updateCollectionItems } from "../api";
 type Input = {
   /**
    * The ID of the collection containing the items.
+   * Use list-collections tool to discover available collections.
    */
   collectionId: string;
 

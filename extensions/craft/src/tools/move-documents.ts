@@ -4,6 +4,7 @@ import { moveDocuments, type DocumentDestination } from "../api";
 type Input = {
   /**
    * Array of document IDs to move.
+   * Use search-documents or list-documents tools to find document IDs.
    */
   documentIds: string[];
 
@@ -12,6 +13,7 @@ type Input = {
    * - { destination: "unsorted" } - Move to unsorted
    * - { destination: "templates" } - Move to templates
    * - { folderId: string } - Move to a specific folder
+   * Use list-folders tool to find available folder IDs.
    */
   destination: {
     destination?: "unsorted" | "templates";

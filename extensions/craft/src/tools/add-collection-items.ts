@@ -4,6 +4,8 @@ import { addCollectionItems } from "../api";
 type Input = {
   /**
    * The ID of the collection to add items to.
+   * Use list-collections tool to find collection IDs.
+   * Use get-collection-schema tool first to understand the expected properties.
    */
   collectionId: string;
 

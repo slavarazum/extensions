@@ -11,3 +11,5 @@
 - Add multiple spaces support with easy switching
 - Add recently deleted documents viewing
 - Add MCP-compatible AI tools for document, task, folder, and collection management
+- Add AI Evals with suggested prompts for natural language interactions
+- Add comprehensive AI instructions for better tool usage guidance

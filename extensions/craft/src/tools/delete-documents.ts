@@ -4,6 +4,7 @@ import { deleteDocuments } from "../api";
 type Input = {
   /**
    * Array of document IDs to delete.
+   * Use search-documents or list-documents tools to find document IDs.
    * Documents will be moved to trash. If already in trash, they will be permanently deleted.
    */
   documentIds: string[];

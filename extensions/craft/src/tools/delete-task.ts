@@ -4,6 +4,7 @@ import { deleteTask } from "../api";
 type Input = {
   /**
    * The ID of the task to delete.
+   * Use use-tasks tool to find task IDs.
    */
   taskId: string;
 };

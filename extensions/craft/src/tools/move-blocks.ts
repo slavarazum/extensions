@@ -4,6 +4,7 @@ import { moveBlocks, type BlockPosition } from "../api";
 type Input = {
   /**
    * Array of block IDs to move.
+   * Use get-blocks tool to find block IDs within a document.
    */
   blockIds: string[];
 

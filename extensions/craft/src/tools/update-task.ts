@@ -4,6 +4,7 @@ import { updateTask } from "../api";
 type Input = {
   /**
    * The ID of the task to update.
+   * Use use-tasks tool to find task IDs.
    */
   taskId: string;
 

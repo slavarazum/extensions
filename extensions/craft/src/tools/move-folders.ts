@@ -4,6 +4,7 @@ import { moveFolders, type FolderDestination } from "../api";
 type Input = {
   /**
    * Array of folder IDs to move.
+   * Use list-folders tool to find folder IDs.
    */
   folderIds: string[];
 
@@ -13,7 +14,8 @@ type Input = {
   moveToRoot?: boolean;
 
   /**
-   * ID of parent folder to move into. Use this to nest folders.
+   * ID of parent folder to move into.
+   * Use list-folders tool to find available folder IDs.
    */
   parentFolderId?: string;
 };
