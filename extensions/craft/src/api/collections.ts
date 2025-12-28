@@ -6,7 +6,7 @@
  * - Async functions for tools
  */
 
-import { buildUrl, fetch, ItemsResponse, IdsResponse } from "./client";
+import { buildUrl, fetchDocumentsApi, ItemsResponse, IdsResponse } from "./client";
 import { Block } from "./blocks";
 
 // =============================================================================
@@ -70,7 +70,7 @@ export async function listCollections(params?: ListCollectionsParams): Promise<C
     endDate: params?.endDate,
     documentFilterMode: params?.documentFilterMode,
   });
-  const data = await fetch<ItemsResponse<Collection>>(url);
+  const data = await fetchDocumentsApi<ItemsResponse<Collection>>(url);
   return data.items;
 }
 
@@ -82,7 +82,7 @@ export async function getCollectionSchema(
   format: "schema" | "json-schema-items" = "json-schema-items",
 ): Promise<CollectionSchema> {
   const url = await buildUrl(`/collections/${collectionId}/schema`, { format });
-  return fetch<CollectionSchema>(url);
+  return fetchDocumentsApi<CollectionSchema>(url);
 }
 
 /**
@@ -90,7 +90,7 @@ export async function getCollectionSchema(
  */
 export async function getCollectionItems(collectionId: string, maxDepth = -1): Promise<CollectionItem[]> {
   const url = await buildUrl(`/collections/${collectionId}/items`, { maxDepth });
-  const data = await fetch<ItemsResponse<CollectionItem>>(url);
+  const data = await fetchDocumentsApi<ItemsResponse<CollectionItem>>(url);
   return data.items;
 }
 
@@ -103,7 +103,7 @@ export async function addCollectionItems(
   allowNewSelectOptions?: boolean,
 ): Promise<CollectionItem[]> {
   const url = await buildUrl(`/collections/${collectionId}/items`);
-  const data = await fetch<ItemsResponse<CollectionItem>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<CollectionItem>>(url, {
     method: "POST",
     body: JSON.stringify({
       items,
@@ -122,7 +122,7 @@ export async function updateCollectionItems(
   allowNewSelectOptions?: boolean,
 ): Promise<CollectionItem[]> {
   const url = await buildUrl(`/collections/${collectionId}/items`);
-  const data = await fetch<ItemsResponse<CollectionItem>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<CollectionItem>>(url, {
     method: "PUT",
     body: JSON.stringify({
       itemsToUpdate,
@@ -137,7 +137,7 @@ export async function updateCollectionItems(
  */
 export async function deleteCollectionItems(collectionId: string, idsToDelete: string[]): Promise<string[]> {
   const url = await buildUrl(`/collections/${collectionId}/items`);
-  const data = await fetch<IdsResponse>(url, {
+  const data = await fetchDocumentsApi<IdsResponse>(url, {
     method: "DELETE",
     body: JSON.stringify({ idsToDelete }),
   });

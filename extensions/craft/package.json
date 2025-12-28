@@ -307,12 +307,28 @@
       "placeholder": "https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
     },
     {
+      "name": "documentsApiKey",
+      "title": "Documents API Key",
+      "description": "Optional API key for Documents connection. Create one in Craft API connection settings for enhanced security.",
+      "type": "password",
+      "required": false,
+      "placeholder": "Optional"
+    },
+    {
       "name": "dailyNotesAndTasksApiUrl",
       "title": "Daily Notes & Tasks API URL",
       "description": "Your Craft Daily Notes & Tasks API URL. Get it from Craft Settings > API Access.",
       "type": "textfield",
       "required": true,
       "placeholder": "https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
+    },
+    {
+      "name": "dailyNotesAndTasksApiKey",
+      "title": "Daily Notes & Tasks API Key",
+      "description": "Optional API key for Daily Notes & Tasks connection. Create one in Craft API connection settings for enhanced security.",
+      "type": "password",
+      "required": false,
+      "placeholder": "Optional"
     }
   ],
   "dependencies": {

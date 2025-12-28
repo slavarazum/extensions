@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrl, buildUrlWithBaseUrl, fetch, ItemsResponse } from "./client";
+import { buildUrl, buildUrlWithBaseUrl, fetchDocumentsApi, ItemsResponse } from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -100,11 +100,11 @@ export interface UseFoldersResult {
  * ```
  */
 export function useFolders(): UseFoldersResult {
-  const { documentsApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { documentsApiUrl, documentsHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Folder>>(
     buildUrlWithBaseUrl(documentsApiUrl, "/folders"),
-    { keepPreviousData: true, execute: !!documentsApiUrl },
+    { keepPreviousData: true, execute: !!documentsApiUrl, headers: documentsHeaders },
   );
 
   const folders = data?.items ?? [];
@@ -136,7 +136,7 @@ export function useFolders(): UseFoldersResult {
  */
 export async function fetchFolders(): Promise<Folder[]> {
   const url = await buildUrl("/folders");
-  const data = await fetch<ItemsResponse<Folder>>(url);
+  const data = await fetchDocumentsApi<ItemsResponse<Folder>>(url);
   return data.items;
 }
 
@@ -147,7 +147,7 @@ export async function createFolders(
   folders: { name: string; parentFolderId?: string }[],
 ): Promise<{ id: string; name: string; parentFolderId?: string }[]> {
   const url = await buildUrl("/folders");
-  const data = await fetch<ItemsResponse<{ id: string; name: string; parentFolderId?: string }>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<{ id: string; name: string; parentFolderId?: string }>>(url, {
     method: "POST",
     body: JSON.stringify({ folders }),
   });
@@ -159,7 +159,7 @@ export async function createFolders(
  */
 export async function deleteFolders(folderIds: string[]): Promise<string[]> {
   const url = await buildUrl("/folders");
-  const data = await fetch<ItemsResponse<string>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<string>>(url, {
     method: "DELETE",
     body: JSON.stringify({ folderIds }),
   });
@@ -174,7 +174,7 @@ export async function moveFolders(
   destination: FolderDestination,
 ): Promise<{ id: string; destination: FolderDestination }[]> {
   const url = await buildUrl("/folders/move");
-  const data = await fetch<ItemsResponse<{ id: string; destination: FolderDestination }>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<{ id: string; destination: FolderDestination }>>(url, {
     method: "PUT",
     body: JSON.stringify({ folderIds, destination }),
   });

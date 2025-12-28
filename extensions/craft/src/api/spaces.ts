@@ -16,12 +16,16 @@ export interface Space {
   name: string;
   documentsApiUrl: string;
   dailyNotesAndTasksApiUrl: string;
+  documentsApiKey?: string;
+  dailyNotesAndTasksApiKey?: string;
   isDefault?: boolean;
 }
 
 interface Preferences {
   documentsApiUrl?: string;
   dailyNotesAndTasksApiUrl?: string;
+  documentsApiKey?: string;
+  dailyNotesAndTasksApiKey?: string;
 }
 
 /** Error response from Craft API when daily note doesn't exist */
@@ -127,6 +131,8 @@ export async function getDefaultSpace(): Promise<Space | null> {
     name: "Default Space",
     documentsApiUrl: preferences.documentsApiUrl,
     dailyNotesAndTasksApiUrl: preferences.dailyNotesAndTasksApiUrl,
+    documentsApiKey: preferences.documentsApiKey,
+    dailyNotesAndTasksApiKey: preferences.dailyNotesAndTasksApiKey,
     isDefault: true,
   };
 }
@@ -292,6 +298,22 @@ export async function getDailyNotesAndTasksApiUrl(): Promise<string> {
   return space.dailyNotesAndTasksApiUrl;
 }
 
+/**
+ * Get the Documents API Key for the current space (if configured).
+ */
+export async function getDocumentsApiKey(): Promise<string | undefined> {
+  const space = await getCurrentSpace();
+  return space.documentsApiKey;
+}
+
+/**
+ * Get the Daily Notes & Tasks API Key for the current space (if configured).
+ */
+export async function getDailyNotesAndTasksApiKey(): Promise<string | undefined> {
+  const space = await getCurrentSpace();
+  return space.dailyNotesAndTasksApiKey;
+}
+
 // =============================================================================
 // React Hook
 // =============================================================================
@@ -307,6 +329,29 @@ export interface UseCurrentSpaceResult {
   documentsApiUrl: string;
   /** Daily Notes & Tasks API base URL for current space (empty string if loading) */
   dailyNotesApiUrl: string;
+  /** Documents API key for current space (undefined if not configured or loading) */
+  documentsApiKey: string | undefined;
+  /** Daily Notes & Tasks API key for current space (undefined if not configured or loading) */
+  dailyNotesApiKey: string | undefined;
+  /** Headers for Documents API requests (includes Authorization if API key configured) */
+  documentsHeaders: HeadersInit;
+  /** Headers for Daily Notes API requests (includes Authorization if API key configured) */
+  dailyNotesHeaders: HeadersInit;
+}
+
+/**
+ * Build headers object with optional API key authorization.
+ */
+function buildSpaceHeaders(apiKey?: string): HeadersInit {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (apiKey) {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
+
+  return headers;
 }
 
 /**
@@ -315,12 +360,15 @@ export interface UseCurrentSpaceResult {
  *
  * @example
  * ```tsx
- * const { space, documentsApiUrl, isLoading } = useCurrentSpace();
- * // Use documentsApiUrl in useFetch or other hooks
+ * const { space, documentsApiUrl, documentsHeaders, isLoading } = useCurrentSpace();
+ * // Use documentsApiUrl and documentsHeaders in useFetch
  * ```
  */
 export function useCurrentSpace(): UseCurrentSpaceResult {
   const { data, isLoading, error, revalidate } = usePromise(getCurrentSpace);
+
+  const documentsHeaders = buildSpaceHeaders(data?.documentsApiKey);
+  const dailyNotesHeaders = buildSpaceHeaders(data?.dailyNotesAndTasksApiKey);
 
   return {
     space: data,
@@ -329,5 +377,9 @@ export function useCurrentSpace(): UseCurrentSpaceResult {
     revalidate,
     documentsApiUrl: data?.documentsApiUrl ?? "",
     dailyNotesApiUrl: data?.dailyNotesAndTasksApiUrl ?? "",
+    documentsApiKey: data?.documentsApiKey,
+    dailyNotesApiKey: data?.dailyNotesAndTasksApiKey,
+    documentsHeaders,
+    dailyNotesHeaders,
   };
 }

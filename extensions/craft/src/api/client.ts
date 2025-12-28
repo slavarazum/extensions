@@ -8,6 +8,8 @@ import {
   getCurrentSpace,
   getDocumentsApiUrl,
   getDailyNotesAndTasksApiUrl,
+  getDocumentsApiKey,
+  getDailyNotesAndTasksApiKey,
 } from "./spaces";
 
 // =============================================================================
@@ -26,7 +28,7 @@ export type IdsResponse = ItemsResponse<{ id: string }>;
 // Configuration
 // =============================================================================
 
-export { getCurrentSpace, getDocumentsApiUrl, getDailyNotesAndTasksApiUrl };
+export { getCurrentSpace, getDocumentsApiUrl, getDailyNotesAndTasksApiUrl, getDocumentsApiKey, getDailyNotesAndTasksApiKey };
 
 // =============================================================================
 // Date Utilities
@@ -99,6 +101,25 @@ function buildUrlWithBase(baseUrl: string, endpoint: string, params?: QueryParam
 }
 
 // =============================================================================
+// HTTP Headers
+// =============================================================================
+
+/**
+ * Build headers object with optional API key authorization.
+ */
+export function buildHeaders(apiKey?: string): HeadersInit {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (apiKey) {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
+
+  return headers;
+}
+
+// =============================================================================
 // HTTP Client
 // =============================================================================
 
@@ -106,13 +127,22 @@ function buildUrlWithBase(baseUrl: string, endpoint: string, params?: QueryParam
  * Make a fetch request to the Craft API.
  * This is a thin wrapper around native fetch for async tool functions.
  */
-export async function fetch<T>(url: string, options?: RequestInit): Promise<T> {
+export async function fetch<T>(url: string, options?: RequestInit & { apiKey?: string }): Promise<T> {
+  const { apiKey, ...fetchOptions } = options ?? {};
+
+  console.log(`[Craft API] Request: ${fetchOptions.method ?? "GET"} ${url}`);
+  console.log(`[Craft API] API Key provided: ${apiKey ? "yes (length: " + apiKey.length + ")" : "no"}`);
+
+  const headers = {
+    ...buildHeaders(apiKey),
+    ...fetchOptions?.headers,
+  };
+
+  console.log(`[Craft API] Headers:`, JSON.stringify(headers));
+
   const response = await globalThis.fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    ...fetchOptions,
+    headers,
   });
 
   if (!response.ok) {
@@ -121,4 +151,20 @@ export async function fetch<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   return response.json();
+}
+
+/**
+ * Make a fetch request to the Documents API with automatic API key.
+ */
+export async function fetchDocumentsApi<T>(url: string, options?: RequestInit): Promise<T> {
+  const apiKey = await getDocumentsApiKey();
+  return fetch<T>(url, { ...options, apiKey });
+}
+
+/**
+ * Make a fetch request to the Daily Notes API with automatic API key.
+ */
+export async function fetchDailyNotesApi<T>(url: string, options?: RequestInit): Promise<T> {
+  const apiKey = await getDailyNotesAndTasksApiKey();
+  return fetch<T>(url, { ...options, apiKey });
 }

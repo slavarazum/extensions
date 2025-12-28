@@ -42,12 +42,25 @@ Each connection will provide a URL in this format:
 https://connect.craft.do/links/YOUR_LINK_ID/api/v1
 ```
 
-### 3. Configure the Extension in Raycast
+### 3. (Optional) Create API Keys for Enhanced Security
+
+By default, API connections use URL-based access. For enhanced security, you can restrict access using API keys:
+
+1. In your API connection settings, change **Access Mode** to **API Key**
+2. Click the **"+"** button next to **API Keys** to create a new key
+3. Copy the generated API key (you won't be able to see it again)
+4. Enter the API key in the Raycast extension preferences
+
+You can create separate API keys for each connection (Documents and Daily Notes & Tasks).
+
+### 4. Configure the Extension in Raycast
 
 When you first run any Craft command in Raycast, you'll be prompted to enter:
 
 - **Documents API URL** – The API URL for your documents connection
+- **Documents API Key** – (Optional) API key if Access Mode is set to API Key
 - **Daily Notes & Tasks API URL** – The API URL for your daily notes and tasks connection
+- **Daily Notes & Tasks API Key** – (Optional) API key if Access Mode is set to API Key
 
 You can also configure these later in Raycast Preferences → Extensions → Craft.
 

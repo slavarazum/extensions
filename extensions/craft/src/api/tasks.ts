@@ -9,7 +9,7 @@
 
 import { Toast, showToast } from "@raycast/api";
 import { useFetch, showFailureToast } from "@raycast/utils";
-import { buildUrlWithBaseUrl, buildUrl, fetch, ItemsResponse, IdsResponse } from "./client";
+import { buildUrlWithBaseUrl, buildUrl, fetchDocumentsApi, ItemsResponse, IdsResponse } from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -99,11 +99,11 @@ export interface UseTasksResult {
  * ```
  */
 export function useTasks(params?: TasksParams): UseTasksResult {
-  const { documentsApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { documentsApiUrl, documentsHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Task>>(
     buildUrlWithBaseUrl(documentsApiUrl, "/tasks", { ...params }),
-    { keepPreviousData: true, execute: !!documentsApiUrl },
+    { keepPreviousData: true, execute: !!documentsApiUrl, headers: documentsHeaders },
   );
 
   return {
@@ -225,7 +225,7 @@ export function useTaskHandlers(revalidate: () => void): TaskHandlers {
  */
 export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
   const url = await buildUrl("/tasks", { ...params });
-  const data = await fetch<ItemsResponse<Task>>(url);
+  const data = await fetchDocumentsApi<ItemsResponse<Task>>(url);
   return [...data.items].reverse();
 }
 
@@ -234,7 +234,7 @@ export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
  */
 export async function createTask(task: CreateTaskParams): Promise<Task> {
   const url = await buildUrl("/tasks");
-  const data = await fetch<ItemsResponse<Task>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<Task>>(url, {
     method: "POST",
     body: JSON.stringify({ tasks: [task] }),
   });
@@ -246,7 +246,7 @@ export async function createTask(task: CreateTaskParams): Promise<Task> {
  */
 export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promise<void> {
   const url = await buildUrl("/tasks");
-  await fetch<ItemsResponse<Task>>(url, {
+  await fetchDocumentsApi<ItemsResponse<Task>>(url, {
     method: "PUT",
     body: JSON.stringify({ tasksToUpdate: [{ id: taskId, taskInfo: updates }] }),
   });
@@ -257,7 +257,7 @@ export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promi
  */
 export async function deleteTask(taskId: string): Promise<void> {
   const url = await buildUrl("/tasks");
-  await fetch<IdsResponse>(url, {
+  await fetchDocumentsApi<IdsResponse>(url, {
     method: "DELETE",
     body: JSON.stringify({ idsToDelete: [taskId] }),
   });

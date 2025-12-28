@@ -8,7 +8,7 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetch, ItemsResponse, QueryParams } from "./client";
+import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetchDocumentsApi, fetchDailyNotesApi, ItemsResponse, QueryParams } from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -116,12 +116,12 @@ export interface UseDocumentsResult {
  * ```
  */
 export function useDocuments(params?: ListDocumentsParams, options?: UseDocumentsOptions): UseDocumentsResult {
-  const { documentsApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { documentsApiUrl, documentsHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
   const shouldExecute = options?.execute !== false && !!documentsApiUrl;
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Document>>(
     buildUrlWithBaseUrl(documentsApiUrl, ENDPOINTS.documents, { ...params }),
-    { keepPreviousData: true, execute: shouldExecute },
+    { keepPreviousData: true, execute: shouldExecute, headers: documentsHeaders },
   );
 
   return {
@@ -152,13 +152,14 @@ export interface UseRecentDocumentsResult {
  * ```
  */
 export function useRecentDocuments(): UseRecentDocumentsResult {
-  const { documentsApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { documentsApiUrl, documentsHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Document>, undefined, Document[]>(
     buildUrlWithBaseUrl(documentsApiUrl, ENDPOINTS.documents, { fetchMetadata: true }),
     {
       keepPreviousData: true,
       execute: !!documentsApiUrl,
+      headers: documentsHeaders,
       mapResult(result) {
         const seen = new Set<string>();
         const uniqueDocs = result.items.filter((doc) => {
@@ -205,7 +206,7 @@ export function useDocumentSearch(
   query: string,
   params?: Omit<SearchDocumentsParams, "include">,
 ): UseDocumentSearchResult {
-  const { documentsApiUrl, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { documentsApiUrl, documentsHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
   const hasQuery = query.length > 0;
   const searchParams: QueryParams = {
     include: query,
@@ -221,7 +222,7 @@ export function useDocumentSearch(
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<DocumentSearchMatch>>(
     buildUrlWithBaseUrl(documentsApiUrl, ENDPOINTS.search, searchParams),
-    { execute: shouldExecute, keepPreviousData: true },
+    { execute: shouldExecute, keepPreviousData: true, headers: documentsHeaders },
   );
 
   return {
@@ -242,7 +243,7 @@ export function useDocumentSearch(
  */
 export async function fetchDocuments(params?: ListDocumentsParams): Promise<Document[]> {
   const url = await buildUrl(ENDPOINTS.documents, { ...params });
-  const data = await fetch<ItemsResponse<Document>>(url);
+  const data = await fetchDocumentsApi<ItemsResponse<Document>>(url);
   return data.items;
 }
 
@@ -260,7 +261,7 @@ export async function searchDocuments(params: SearchDocumentsParams): Promise<Do
     lastModifiedDateLte: params.lastModifiedDateLte,
   };
   const url = await buildUrl(ENDPOINTS.search, searchParams);
-  const data = await fetch<ItemsResponse<DocumentSearchMatch>>(url);
+  const data = await fetchDocumentsApi<ItemsResponse<DocumentSearchMatch>>(url);
   return data.items;
 }
 
@@ -275,7 +276,7 @@ export async function searchDailyNotes(params: SearchDailyNotesParams): Promise<
     include: typeof params.include === "string" ? params.include : undefined,
   };
   const url = await buildDailyNotesUrl("/daily-notes/search", searchParams);
-  const data = await fetch<ItemsResponse<DailyNoteSearchMatch>>(url);
+  const data = await fetchDailyNotesApi<ItemsResponse<DailyNoteSearchMatch>>(url);
   return data.items;
 }
 
@@ -287,7 +288,7 @@ export async function createDocument(params: {
   destination?: DocumentDestination;
 }): Promise<Document> {
   const url = await buildUrl(ENDPOINTS.documents);
-  const data = await fetch<ItemsResponse<Document>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<Document>>(url, {
     method: "POST",
     body: JSON.stringify({
       documents: [{ title: params.title }],
@@ -302,7 +303,7 @@ export async function createDocument(params: {
  */
 export async function deleteDocuments(documentIds: string[]): Promise<string[]> {
   const url = await buildUrl(ENDPOINTS.documents);
-  const data = await fetch<ItemsResponse<string>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<string>>(url, {
     method: "DELETE",
     body: JSON.stringify({ documentIds }),
   });
@@ -317,7 +318,7 @@ export async function moveDocuments(
   destination: DocumentDestination,
 ): Promise<{ id: string; destination: DocumentDestination }[]> {
   const url = await buildUrl(ENDPOINTS.move);
-  const data = await fetch<ItemsResponse<{ id: string; destination: DocumentDestination }>>(url, {
+  const data = await fetchDocumentsApi<ItemsResponse<{ id: string; destination: DocumentDestination }>>(url, {
     method: "PUT",
     body: JSON.stringify({ documentIds, destination }),
   });

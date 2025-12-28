@@ -171,7 +171,7 @@ interface AddSpaceFormProps {
 function AddSpaceForm({ onAdd }: AddSpaceFormProps) {
   const { pop } = useNavigation();
 
-  const handleSubmit = async (values: { name: string; documentsApiUrl: string; dailyNotesAndTasksApiUrl: string }) => {
+  const handleSubmit = async (values: { name: string; documentsApiUrl: string; dailyNotesAndTasksApiUrl: string; documentsApiKey?: string; dailyNotesAndTasksApiKey?: string }) => {
     try {
       if (!values.name.trim()) {
         await showToast({ style: Toast.Style.Failure, title: "Name is required" });
@@ -190,6 +190,8 @@ function AddSpaceForm({ onAdd }: AddSpaceFormProps) {
         name: values.name.trim(),
         documentsApiUrl: values.documentsApiUrl.trim(),
         dailyNotesAndTasksApiUrl: values.dailyNotesAndTasksApiUrl.trim(),
+        documentsApiKey: values.documentsApiKey?.trim() || undefined,
+        dailyNotesAndTasksApiKey: values.dailyNotesAndTasksApiKey?.trim() || undefined,
       });
 
       onAdd();
@@ -230,6 +232,20 @@ function AddSpaceForm({ onAdd }: AddSpaceFormProps) {
         placeholder="https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
         info="Get this from Craft Settings > API Access"
       />
+      <Form.Separator />
+      <Form.Description text="API Keys (Optional)" />
+      <Form.PasswordField
+        id="documentsApiKey"
+        title="Documents API Key"
+        placeholder="Optional - for enhanced security"
+        info="Create an API key in Craft API connection settings if Access Mode is set to API Key"
+      />
+      <Form.PasswordField
+        id="dailyNotesAndTasksApiKey"
+        title="Daily Notes & Tasks API Key"
+        placeholder="Optional - for enhanced security"
+        info="Create an API key in Craft API connection settings if Access Mode is set to API Key"
+      />
     </Form>
   );
 }
@@ -242,7 +258,7 @@ interface EditSpaceFormProps {
 function EditSpaceForm({ space, onEdit }: EditSpaceFormProps) {
   const { pop } = useNavigation();
 
-  const handleSubmit = async (values: { name: string; documentsApiUrl: string; dailyNotesAndTasksApiUrl: string }) => {
+  const handleSubmit = async (values: { name: string; documentsApiUrl: string; dailyNotesAndTasksApiUrl: string; documentsApiKey?: string; dailyNotesAndTasksApiKey?: string }) => {
     try {
       if (!values.name.trim()) {
         await showToast({ style: Toast.Style.Failure, title: "Name is required" });
@@ -261,6 +277,8 @@ function EditSpaceForm({ space, onEdit }: EditSpaceFormProps) {
         name: values.name.trim(),
         documentsApiUrl: values.documentsApiUrl.trim(),
         dailyNotesAndTasksApiUrl: values.dailyNotesAndTasksApiUrl.trim(),
+        documentsApiKey: values.documentsApiKey?.trim() || undefined,
+        dailyNotesAndTasksApiKey: values.dailyNotesAndTasksApiKey?.trim() || undefined,
       });
 
       onEdit();
@@ -303,6 +321,22 @@ function EditSpaceForm({ space, onEdit }: EditSpaceFormProps) {
         defaultValue={space.dailyNotesAndTasksApiUrl}
         placeholder="https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
         info="Get this from Craft Settings > API Access"
+      />
+      <Form.Separator />
+      <Form.Description text="API Keys (Optional)" />
+      <Form.PasswordField
+        id="documentsApiKey"
+        title="Documents API Key"
+        defaultValue={space.documentsApiKey}
+        placeholder="Optional - for enhanced security"
+        info="Create an API key in Craft API connection settings if Access Mode is set to API Key"
+      />
+      <Form.PasswordField
+        id="dailyNotesAndTasksApiKey"
+        title="Daily Notes & Tasks API Key"
+        defaultValue={space.dailyNotesAndTasksApiKey}
+        placeholder="Optional - for enhanced security"
+        info="Create an API key in Craft API connection settings if Access Mode is set to API Key"
       />
     </Form>
   );
