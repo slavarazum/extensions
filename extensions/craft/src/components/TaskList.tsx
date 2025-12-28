@@ -20,6 +20,33 @@ const SCOPE_CONFIG: Record<ViewScope, { title: string; icon: Icon; description: 
 const SCOPE_OPTIONS: ViewScope[] = ["inbox", "today", "upcoming", "active"];
 
 /**
+ * Format a daily note date as "Today, Sun, Dec 28" style
+ */
+function formatDailyNoteDate(dateStr: string): string {
+  const date = new Date(dateStr + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const taskDate = new Date(date);
+  taskDate.setHours(0, 0, 0, 0);
+
+  const diffTime = taskDate.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
+  const monthDay = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  if (diffDays === 0) {
+    return `Today, ${dayName}, ${monthDay}`;
+  } else if (diffDays === 1) {
+    return `Tomorrow, ${dayName}, ${monthDay}`;
+  } else if (diffDays === -1) {
+    return `Yesterday, ${dayName}, ${monthDay}`;
+  } else {
+    return `${dayName}, ${monthDay}`;
+  }
+}
+
+/**
  * Group tasks by their location
  */
 function groupTasksByLocation(tasks: Task[]): Map<string, Task[]> {
@@ -32,6 +59,8 @@ function groupTasksByLocation(tasks: Task[]): Map<string, Task[]> {
     let groupKey: string;
     if (locationType === "document" && locationTitle) {
       groupKey = locationTitle;
+    } else if (locationType === "dailyNote" && task.location?.date) {
+      groupKey = formatDailyNoteDate(task.location.date);
     } else if (locationType === "dailyNote") {
       groupKey = "Daily Note";
     } else {
@@ -48,15 +77,39 @@ function groupTasksByLocation(tasks: Task[]): Map<string, Task[]> {
 }
 
 /**
- * Sort groups: Inbox first, then Daily Note, then documents alphabetically
+ * Check if a group key is a daily note (starts with Today, Tomorrow, Yesterday, or a weekday)
+ */
+function isDailyNoteGroup(key: string): boolean {
+  const dailyNotePrefixes = ["Today,", "Tomorrow,", "Yesterday,", "Sun,", "Mon,", "Tue,", "Wed,", "Thu,", "Fri,", "Sat,"];
+  return dailyNotePrefixes.some(prefix => key.startsWith(prefix));
+}
+
+/**
+ * Sort groups: Inbox first, then Daily Notes (with "Today" first), then documents alphabetically
  */
 function sortGroups(groups: Map<string, Task[]>): [string, Task[]][] {
   const entries = Array.from(groups.entries());
   return entries.sort(([a], [b]) => {
     if (a === "Inbox") return -1;
     if (b === "Inbox") return 1;
-    if (a === "Daily Note") return -1;
-    if (b === "Daily Note") return 1;
+
+    const aIsDailyNote = isDailyNoteGroup(a);
+    const bIsDailyNote = isDailyNoteGroup(b);
+
+    // Daily notes come after Inbox but before documents
+    if (aIsDailyNote && !bIsDailyNote) return -1;
+    if (!aIsDailyNote && bIsDailyNote) return 1;
+
+    // If both are daily notes, prioritize Today > Tomorrow > Yesterday > others
+    if (aIsDailyNote && bIsDailyNote) {
+      if (a.startsWith("Today,")) return -1;
+      if (b.startsWith("Today,")) return 1;
+      if (a.startsWith("Tomorrow,")) return -1;
+      if (b.startsWith("Tomorrow,")) return 1;
+      if (a.startsWith("Yesterday,")) return -1;
+      if (b.startsWith("Yesterday,")) return 1;
+    }
+
     return a.localeCompare(b);
   });
 }
@@ -137,8 +190,8 @@ function groupTasksByTimePeriod(tasks: Task[]): [string, Task[]][] {
 const COMPLETE_ANIMATION_DELAY = 3000;
 
 export interface TaskListProps {
-  /** Fixed scope - renders a simple list */
-  scope?: TaskScope;
+  /** Fixed scope - renders a simple list. Use "today" for grouped today view */
+  scope?: ViewScope;
   /** Show scope dropdown - renders list with scope switcher */
   showScopeDropdown?: boolean;
   /** Default scope when using dropdown */
@@ -273,6 +326,7 @@ export function TaskList({
                 extraActions={createAction}
                 isCompleting={isTaskCompleting(task.id)}
                 hideLocation
+                hideTodaySchedule
               />
             ))}
           </List.Section>

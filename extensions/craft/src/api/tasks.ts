@@ -25,6 +25,8 @@ export interface TaskInfo {
 export interface TaskLocation {
   type: "inbox" | "document" | "dailyNote";
   title?: string; // Document title if type is "document"
+  date?: string; // Date if type is "dailyNote" (ISO format: YYYY-MM-DD)
+  documentId?: string; // Document ID if type is "document"
 }
 
 export interface TaskRepeat {
