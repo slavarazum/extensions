@@ -143,11 +143,11 @@ export interface UseBlocksOptions {
  * ```
  */
 export function useBlocks(params: GetBlocksParams, options?: UseBlocksOptions): UseBlocksResult {
-  const { documentsApiUrl, dailyNotesApiUrl, documentsHeaders, dailyNotesHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { documentsApiUrl, dailyNotesAndTasksApiUrl, documentsHeaders, dailyNotesAndTasksHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
   const hasTarget = Boolean(params.id || params.date);
   // Use Daily Notes API for date-based queries, Documents API for ID-based queries
-  const baseUrl = params.date ? dailyNotesApiUrl : documentsApiUrl;
-  const headers = params.date ? dailyNotesHeaders : documentsHeaders;
+  const baseUrl = params.date ? dailyNotesAndTasksApiUrl : documentsApiUrl;
+  const headers = params.date ? dailyNotesAndTasksHeaders : documentsHeaders;
   const shouldExecute = hasTarget && !!baseUrl;
 
   const { data, isLoading, error, revalidate } = useFetch<Block>(

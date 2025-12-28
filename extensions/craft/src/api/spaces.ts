@@ -58,8 +58,8 @@ const STORAGE_KEYS = {
  * Uses a workaround: calling /blocks with date=tomorrow returns a 404 error
  * that includes the spaceId in the error details.
  */
-async function fetchSpaceIdFromApi(dailyNotesApiUrl: string): Promise<string> {
-  const url = `${dailyNotesApiUrl}/blocks?date=tomorrow&maxDepth=0`;
+async function fetchSpaceIdFromApi(documentsApiUrl: string): Promise<string> {
+  const url = `${documentsApiUrl}/blocks?date=tomorrow&maxDepth=0`;
 
   const response = await globalThis.fetch(url, {
     method: "GET",
@@ -96,7 +96,7 @@ async function fetchSpaceIdFromApi(dailyNotesApiUrl: string): Promise<string> {
  * Get or fetch the default space ID.
  * Fetches from API on first call and caches in LocalStorage.
  */
-async function getOrFetchDefaultSpaceId(dailyNotesApiUrl: string): Promise<string> {
+async function getOrFetchDefaultSpaceId(documentsApiUrl: string): Promise<string> {
   // Check if we already have the default space ID cached
   const cachedId = await LocalStorage.getItem<string>(STORAGE_KEYS.defaultSpaceId);
   if (cachedId) {
@@ -104,7 +104,7 @@ async function getOrFetchDefaultSpaceId(dailyNotesApiUrl: string): Promise<strin
   }
 
   // Fetch from API and cache
-  const spaceId = await fetchSpaceIdFromApi(dailyNotesApiUrl);
+  const spaceId = await fetchSpaceIdFromApi(documentsApiUrl);
   await LocalStorage.setItem(STORAGE_KEYS.defaultSpaceId, spaceId);
   return spaceId;
 }
@@ -124,7 +124,7 @@ export async function getDefaultSpace(): Promise<Space | null> {
     return null;
   }
 
-  const spaceId = await getOrFetchDefaultSpaceId(preferences.dailyNotesAndTasksApiUrl);
+  const spaceId = await getOrFetchDefaultSpaceId(preferences.documentsApiUrl);
 
   return {
     id: spaceId,
@@ -182,7 +182,7 @@ export async function addSpace(space: Omit<Space, "id">): Promise<Space> {
   const spaces = await getAdditionalSpaces();
 
   // Fetch the real spaceId from Craft API
-  const spaceId = await fetchSpaceIdFromApi(space.dailyNotesAndTasksApiUrl);
+  const spaceId = await fetchSpaceIdFromApi(space.documentsApiUrl);
 
   const newSpace: Space = {
     ...space,
@@ -328,15 +328,15 @@ export interface UseCurrentSpaceResult {
   /** Documents API base URL for current space (empty string if loading) */
   documentsApiUrl: string;
   /** Daily Notes & Tasks API base URL for current space (empty string if loading) */
-  dailyNotesApiUrl: string;
+  dailyNotesAndTasksApiUrl: string;
   /** Documents API key for current space (undefined if not configured or loading) */
   documentsApiKey: string | undefined;
   /** Daily Notes & Tasks API key for current space (undefined if not configured or loading) */
-  dailyNotesApiKey: string | undefined;
+  dailyNotesAndTasksApiKey: string | undefined;
   /** Headers for Documents API requests (includes Authorization if API key configured) */
   documentsHeaders: HeadersInit;
   /** Headers for Daily Notes API requests (includes Authorization if API key configured) */
-  dailyNotesHeaders: HeadersInit;
+  dailyNotesAndTasksHeaders: HeadersInit;
 }
 
 /**
@@ -368,7 +368,7 @@ export function useCurrentSpace(): UseCurrentSpaceResult {
   const { data, isLoading, error, revalidate } = usePromise(getCurrentSpace);
 
   const documentsHeaders = buildSpaceHeaders(data?.documentsApiKey);
-  const dailyNotesHeaders = buildSpaceHeaders(data?.dailyNotesAndTasksApiKey);
+  const dailyNotesAndTasksHeaders = buildSpaceHeaders(data?.dailyNotesAndTasksApiKey);
 
   return {
     space: data,
@@ -376,10 +376,10 @@ export function useCurrentSpace(): UseCurrentSpaceResult {
     error,
     revalidate,
     documentsApiUrl: data?.documentsApiUrl ?? "",
-    dailyNotesApiUrl: data?.dailyNotesAndTasksApiUrl ?? "",
+    dailyNotesAndTasksApiUrl: data?.dailyNotesAndTasksApiUrl ?? "",
     documentsApiKey: data?.documentsApiKey,
-    dailyNotesApiKey: data?.dailyNotesAndTasksApiKey,
+    dailyNotesAndTasksApiKey: data?.dailyNotesAndTasksApiKey,
     documentsHeaders,
-    dailyNotesHeaders,
+    dailyNotesAndTasksHeaders,
   };
 }
