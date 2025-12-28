@@ -1,4 +1,4 @@
-import { ActionPanel, Action, List, Icon, open, Detail } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, Color, open, Detail } from "@raycast/api";
 import { useState, useMemo } from "react";
 import {
   useDocumentSearch,
@@ -154,6 +154,29 @@ function formatDailyNoteDate(doc: Document): string {
   }
 }
 
+/**
+ * Get calendar icon with color based on date
+ */
+function getDailyNoteIcon(dateStr?: string) {
+  if (!dateStr) return Icon.Calendar;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const noteDate = new Date(dateStr + "T00:00:00");
+
+  if (noteDate.getTime() === today.getTime()) {
+    return { source: Icon.Calendar, tintColor: Color.Blue };
+  } else if (noteDate.getTime() === yesterday.getTime()) {
+    return { source: Icon.Calendar, tintColor: Color.Orange };
+  }
+
+  return Icon.Calendar;
+}
+
 function SearchResultItem({
   searchMatch,
   document,
@@ -210,7 +233,7 @@ function SearchResultItem({
 
   return (
     <List.Item
-      icon={Icon.Calendar}
+      icon={getDailyNoteIcon(document?.dailyNoteDate)}
       title={snippet || "Untitled"}
       subtitle={document ? formatDailyNoteDate(document) : undefined}
       accessories={document?.dailyNoteDate ? [{ text: document.dailyNoteDate }] : []}
@@ -248,7 +271,7 @@ function SearchResultItem({
 function DailyNoteItem({ document }: { document: Document }) {
   return (
     <List.Item
-      icon={Icon.Calendar}
+      icon={getDailyNoteIcon(document.dailyNoteDate)}
       title={formatDailyNoteDate(document)}
       accessories={document.dailyNoteDate ? [{ text: document.dailyNoteDate }] : []}
       actions={
