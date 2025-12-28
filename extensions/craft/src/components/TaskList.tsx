@@ -123,8 +123,10 @@ function groupTasksByTimePeriod(tasks: Task[]): [string, Task[]][] {
   today.setHours(0, 0, 0, 0);
 
   // Calculate end of this week (Sunday)
+  // If today is Sunday (day 0), end of week is today; otherwise calculate days until Sunday
   const endOfWeek = new Date(today);
-  const daysUntilSunday = 7 - today.getDay();
+  const dayOfWeek = today.getDay();
+  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
   endOfWeek.setDate(today.getDate() + daysUntilSunday);
   endOfWeek.setHours(23, 59, 59, 999);
 
