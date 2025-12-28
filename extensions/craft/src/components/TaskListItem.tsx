@@ -1,4 +1,4 @@
-import { ActionPanel, Action, List, Icon, Color, confirmAlert, Alert } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, Color, confirmAlert, Alert, open } from "@raycast/api";
 import { blockLink, formatLocalDate, type Task } from "../api";
 
 export interface TaskListItemProps {
@@ -59,6 +59,15 @@ export function TaskListItem({
                     }
                   }}
                 />
+                <Action
+                  title="Open in App"
+                  icon={Icon.AppWindow}
+                  shortcut={{ modifiers: ["cmd"], key: "return" }}
+                  onAction={async () => {
+                    const url = await blockLink(task.id);
+                    await open(url);
+                  }}
+                />
                 {onCancel && (
                   <Action
                     title="Cancel"
@@ -71,11 +80,6 @@ export function TaskListItem({
             ) : (
               <Action title="Reopen" icon={Icon.Circle} onAction={onReopen} />
             )}
-            <Action.OpenInBrowser
-              title="Open in Craft"
-              url={blockLink(task.id)}
-              shortcut={{ modifiers: ["cmd"], key: "return" }}
-            />
           </ActionPanel.Section>
           {extraActions && <ActionPanel.Section>{extraActions}</ActionPanel.Section>}
           <ActionPanel.Section>

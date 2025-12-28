@@ -1,7 +1,7 @@
 import { ActionPanel, Action, Form, Icon, Toast, showToast, popToRoot, open } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { createDocument, getCurrentSpaceId, openLink } from "./api";
+import { createDocument, openLink } from "./api";
 
 type Destination = "unsorted" | "templates";
 
@@ -25,8 +25,7 @@ export default function Command() {
         destination: { destination },
       });
 
-      const spaceId = await getCurrentSpaceId();
-      const link = openLink({ documentId: document.id, spaceId });
+      const link = await openLink({ documentId: document.id });
 
       if (openAfterCreate) {
         await open(link);
@@ -41,7 +40,7 @@ export default function Command() {
           title: "Document created",
           message: docTitle,
           primaryAction: {
-            title: "Open in Craft",
+            title: "Open in App",
             onAction: () => open(link),
           },
         });
@@ -62,7 +61,7 @@ export default function Command() {
         <ActionPanel>
           <Action.SubmitForm title="Create Document" icon={Icon.Plus} onSubmit={() => handleSubmit(false)} />
           <Action.SubmitForm
-            title="Create and Open in Craft"
+            title="Create and Open in App"
             icon={Icon.AppWindowSidebarRight}
             onSubmit={() => handleSubmit(true)}
           />
