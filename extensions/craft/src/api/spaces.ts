@@ -59,7 +59,7 @@ const STORAGE_KEYS = {
  * that includes the spaceId in the error details.
  */
 async function fetchSpaceIdFromApi(documentsApiUrl: string): Promise<string> {
-  const url = `${documentsApiUrl}/blocks?date=tomorrow&maxDepth=0`;
+  const url = `${documentsApiUrl}/blocks?date=2034-03-10&maxDepth=0`;
 
   const response = await globalThis.fetch(url, {
     method: "GET",
