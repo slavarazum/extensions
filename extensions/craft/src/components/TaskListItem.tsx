@@ -62,7 +62,6 @@ export function TaskListItem({
                 <Action
                   title="Open in App"
                   icon={Icon.AppWindow}
-                  shortcut={{ modifiers: ["cmd"], key: "return" }}
                   onAction={async () => {
                     const url = await blockLink(task.id);
                     await open(url);
