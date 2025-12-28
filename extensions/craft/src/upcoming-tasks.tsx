@@ -1,5 +1,5 @@
 import { TaskList } from "./components";
 
 export default function Command() {
-  return <TaskList scope="upcoming" />;
+  return <TaskList scope="upcoming" allowMutations />;
 }
