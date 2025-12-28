@@ -33,7 +33,7 @@ import {
 } from "./api";
 
 export default function Command() {
-  const { folders, systemFolders, userFolders, isLoading, revalidate } = useFolders();
+  const { folders, userFolders, isLoading, revalidate } = useFolders();
 
   // Separate root-level folders from system folders
   const rootFolders = folders.filter((f) => !SYSTEM_FOLDER_IDS.includes(f.id as SystemFolderId));
@@ -66,7 +66,10 @@ export default function Command() {
               title={folder.name}
               accessories={[
                 ...(folder.folders.length > 0 ? [{ tag: `${folder.folders.length} subfolders` }] : []),
-                { text: `${folder.documentCount} doc${folder.documentCount !== 1 ? "s" : ""}`, tooltip: "Document count" },
+                {
+                  text: `${folder.documentCount} doc${folder.documentCount !== 1 ? "s" : ""}`,
+                  tooltip: "Document count",
+                },
               ]}
               actions={
                 <ActionPanel>
@@ -75,11 +78,7 @@ export default function Command() {
                       title="Open Folder"
                       icon={Icon.Folder}
                       target={
-                        <FolderContents
-                          folder={folder}
-                          allFolders={userFolders}
-                          revalidateFolders={revalidate}
-                        />
+                        <FolderContents folder={folder} allFolders={userFolders} revalidateFolders={revalidate} />
                       }
                     />
                     <Action.Push
@@ -88,40 +87,40 @@ export default function Command() {
                       shortcut={{ modifiers: ["cmd"], key: "n" }}
                       target={<CreateFolderForm parentFolderId={folder.id} onCreated={revalidate} />}
                     />
-                    </ActionPanel.Section>
-                    <ActionPanel.Section>
-                      <Action.Push
-                        title="Move Folder"
-                        icon={Icon.ArrowRight}
-                        shortcut={{ modifiers: ["cmd"], key: "m" }}
-                        target={
-                          <MoveFolderForm
-                            folderId={folder.id}
-                            folderName={folder.name}
-                            allFolders={userFolders}
-                            onMoved={revalidate}
-                          />
-                        }
-                      />
-                      <Action.Push
-                        title="Rename Folder"
-                        icon={Icon.Pencil}
-                        target={<RenameFolderForm folder={folder} />}
-                      />
-                    </ActionPanel.Section>
-                    <ActionPanel.Section>
-                      <Action
-                        title="Delete Folder"
-                        icon={Icon.Trash}
-                        style={Action.Style.Destructive}
-                        shortcut={{ modifiers: ["ctrl"], key: "x" }}
-                        onAction={() => handleDeleteFolder(folder, revalidate)}
-                      />
-                    </ActionPanel.Section>
-                  </ActionPanel>
-                }
-              />
-            ))}
+                  </ActionPanel.Section>
+                  <ActionPanel.Section>
+                    <Action.Push
+                      title="Move Folder"
+                      icon={Icon.ArrowRight}
+                      shortcut={{ modifiers: ["cmd"], key: "m" }}
+                      target={
+                        <MoveFolderForm
+                          folderId={folder.id}
+                          folderName={folder.name}
+                          allFolders={userFolders}
+                          onMoved={revalidate}
+                        />
+                      }
+                    />
+                    <Action.Push
+                      title="Rename Folder"
+                      icon={Icon.Pencil}
+                      target={<RenameFolderForm folder={folder} />}
+                    />
+                  </ActionPanel.Section>
+                  <ActionPanel.Section>
+                    <Action
+                      title="Delete Folder"
+                      icon={Icon.Trash}
+                      style={Action.Style.Destructive}
+                      shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                      onAction={() => handleDeleteFolder(folder, revalidate)}
+                    />
+                  </ActionPanel.Section>
+                </ActionPanel>
+              }
+            />
+          ))}
         </List.Section>
       )}
       <List.Section title="System Locations" subtitle={`${systemFolderItems.length}`}>
@@ -131,7 +130,10 @@ export default function Command() {
             icon={getSystemFolderIcon(folder.id)}
             title={folder.name}
             accessories={[
-              { text: `${folder.documentCount} doc${folder.documentCount !== 1 ? "s" : ""}`, tooltip: "Document count" },
+              {
+                text: `${folder.documentCount} doc${folder.documentCount !== 1 ? "s" : ""}`,
+                tooltip: "Document count",
+              },
             ]}
             actions={
               <ActionPanel>
@@ -139,13 +141,7 @@ export default function Command() {
                   <Action.Push
                     title="Open Location"
                     icon={Icon.Folder}
-                    target={
-                      <FolderContents
-                        folder={folder}
-                        allFolders={userFolders}
-                        revalidateFolders={revalidate}
-                      />
-                    }
+                    target={<FolderContents folder={folder} allFolders={userFolders} revalidateFolders={revalidate} />}
                   />
                 </ActionPanel.Section>
               </ActionPanel>
@@ -220,10 +216,7 @@ function FolderContents({
   };
 
   return (
-    <List
-      isLoading={isLoading}
-      navigationTitle={folder.name}
-    >
+    <List isLoading={isLoading} navigationTitle={folder.name}>
       {folder.folders.length > 0 && (
         <List.Section title="Subfolders" subtitle={`${folder.folders.length}`}>
           {folder.folders.map((subfolder) => (
@@ -410,13 +403,7 @@ function DocumentPreview({
   );
 }
 
-function CreateFolderForm({
-  parentFolderId,
-  onCreated,
-}: {
-  parentFolderId?: string;
-  onCreated: () => void;
-}) {
+function CreateFolderForm({ parentFolderId, onCreated }: { parentFolderId?: string; onCreated: () => void }) {
   const { pop } = useNavigation();
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -450,17 +437,8 @@ function CreateFolderForm({
         </ActionPanel>
       }
     >
-      <Form.TextField
-        id="name"
-        title="Folder Name"
-        placeholder="My Folder"
-        value={name}
-        onChange={setName}
-        autoFocus
-      />
-      {parentFolderId && (
-        <Form.Description title="Parent" text="Will be created as a subfolder" />
-      )}
+      <Form.TextField id="name" title="Folder Name" placeholder="My Folder" value={name} onChange={setName} autoFocus />
+      {parentFolderId && <Form.Description title="Parent" text="Will be created as a subfolder" />}
     </Form>
   );
 }

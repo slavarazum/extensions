@@ -28,7 +28,13 @@ export type IdsResponse = ItemsResponse<{ id: string }>;
 // Configuration
 // =============================================================================
 
-export { getCurrentSpace, getDocumentsApiUrl, getDailyNotesAndTasksApiUrl, getDocumentsApiKey, getDailyNotesAndTasksApiKey };
+export {
+  getCurrentSpace,
+  getDocumentsApiUrl,
+  getDailyNotesAndTasksApiUrl,
+  getDocumentsApiKey,
+  getDailyNotesAndTasksApiKey,
+};
 
 // =============================================================================
 // Date Utilities

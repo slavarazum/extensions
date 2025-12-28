@@ -1,4 +1,16 @@
-import { ActionPanel, Action, List, Detail, Icon, Color, useNavigation, Alert, confirmAlert, showToast, Toast } from "@raycast/api";
+import {
+  ActionPanel,
+  Action,
+  List,
+  Detail,
+  Icon,
+  Color,
+  useNavigation,
+  Alert,
+  confirmAlert,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
 import { useDocuments, useBlocks, deleteDocuments, type Document } from "./api";
@@ -135,10 +147,16 @@ export default function Command() {
                   <Action
                     title="View Daily Note"
                     icon={Icon.Eye}
-                    onAction={() => push(<DailyNoteMarkdownDetail note={{ id: doc.id, date: noteDate, link: doc.clickableLink }} />)}
+                    onAction={() =>
+                      push(<DailyNoteMarkdownDetail note={{ id: doc.id, date: noteDate, link: doc.clickableLink }} />)
+                    }
                   />
-                  {doc.clickableLink && <Action.Open title="Open in App" target={doc.clickableLink} icon={Icon.AppWindow} />}
-                  {doc.clickableLink && <Action.CopyToClipboard title="Copy Deep Link" content={doc.clickableLink} icon={Icon.Link} />}
+                  {doc.clickableLink && (
+                    <Action.Open title="Open in App" target={doc.clickableLink} icon={Icon.AppWindow} />
+                  )}
+                  {doc.clickableLink && (
+                    <Action.CopyToClipboard title="Copy Deep Link" content={doc.clickableLink} icon={Icon.Link} />
+                  )}
                   <Action
                     title="Refresh"
                     icon={Icon.ArrowClockwise}
@@ -209,19 +227,18 @@ function DailyNoteMarkdownDetail({ note }: DailyNoteDetailProps) {
         <ActionPanel>
           {note.link && <Action.Open title="Open in App" target={note.link} icon={Icon.AppWindow} />}
           {note.link && <Action.CopyToClipboard title="Copy Deep Link" content={note.link} icon={Icon.Link} />}
-          <Action
-            title="Go Back"
-            icon={Icon.ArrowLeft}
-            onAction={pop}
-            shortcut={{ modifiers: ["cmd"], key: "[" }}
-          />
+          <Action title="Go Back" icon={Icon.ArrowLeft} onAction={pop} shortcut={{ modifiers: ["cmd"], key: "[" }} />
           <Action
             title="Refresh"
             icon={Icon.ArrowClockwise}
             onAction={revalidate}
             shortcut={{ modifiers: ["cmd"], key: "r" }}
           />
-          <Action.CopyToClipboard title="Copy Markdown" content={markdown} shortcut={{ modifiers: ["cmd"], key: "c" }} />
+          <Action.CopyToClipboard
+            title="Copy Markdown"
+            content={markdown}
+            shortcut={{ modifiers: ["cmd"], key: "c" }}
+          />
         </ActionPanel>
       }
     />

@@ -101,12 +101,7 @@ export default function Command() {
         <Form.Dropdown.Item value="folder" title="Folder..." icon={Icon.Folder} />
       </Form.Dropdown>
       {destinationType === "folder" && (
-        <Form.Dropdown
-          id="folderId"
-          title="Folder"
-          value={selectedFolderId}
-          onChange={setSelectedFolderId}
-        >
+        <Form.Dropdown id="folderId" title="Folder" value={selectedFolderId} onChange={setSelectedFolderId}>
           <Form.Dropdown.Item value="" title="Select a folder..." icon={Icon.Folder} />
           {userFolders.map((folder) => (
             <Form.Dropdown.Item

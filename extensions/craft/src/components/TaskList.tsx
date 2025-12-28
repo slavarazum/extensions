@@ -80,8 +80,19 @@ function groupTasksByLocation(tasks: Task[]): Map<string, Task[]> {
  * Check if a group key is a daily note (starts with Today, Tomorrow, Yesterday, or a weekday)
  */
 function isDailyNoteGroup(key: string): boolean {
-  const dailyNotePrefixes = ["Today,", "Tomorrow,", "Yesterday,", "Sun,", "Mon,", "Tue,", "Wed,", "Thu,", "Fri,", "Sat,"];
-  return dailyNotePrefixes.some(prefix => key.startsWith(prefix));
+  const dailyNotePrefixes = [
+    "Today,",
+    "Tomorrow,",
+    "Yesterday,",
+    "Sun,",
+    "Mon,",
+    "Tue,",
+    "Wed,",
+    "Thu,",
+    "Fri,",
+    "Sat,",
+  ];
+  return dailyNotePrefixes.some((prefix) => key.startsWith(prefix));
 }
 
 /**
@@ -312,11 +323,48 @@ export function TaskList({
       }
       actions={createAction ? <ActionPanel>{createAction}</ActionPanel> : undefined}
     >
-      {isLocationGroupedView && locationGroupedTasks ? (
-        // Grouped view for "today" (by location)
-        locationGroupedTasks.map(([groupKey, groupTasks]) => (
-          <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
-            {groupTasks.map((task) => (
+      {isLocationGroupedView && locationGroupedTasks
+        ? // Grouped view for "today" (by location)
+          locationGroupedTasks.map(([groupKey, groupTasks]) => (
+            <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
+              {groupTasks.map((task) => (
+                <TaskListItem
+                  key={task.id}
+                  task={task}
+                  onComplete={() => handleCompleteWithAnimation(task)}
+                  onReopen={() => handleReopen(task)}
+                  onCancel={allowMutations ? () => handleCancel(task) : undefined}
+                  onDelete={allowMutations ? () => handleDelete(task) : undefined}
+                  onRefresh={revalidate}
+                  extraActions={createAction}
+                  isCompleting={isTaskCompleting(task.id)}
+                  hideLocation
+                  hideTodaySchedule
+                />
+              ))}
+            </List.Section>
+          ))
+        : isTimeGroupedView && timeGroupedTasks
+          ? // Grouped view for "upcoming" (by time period)
+            timeGroupedTasks.map(([groupKey, groupTasks]) => (
+              <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
+                {groupTasks.map((task) => (
+                  <TaskListItem
+                    key={task.id}
+                    task={task}
+                    onComplete={() => handleCompleteWithAnimation(task)}
+                    onReopen={() => handleReopen(task)}
+                    onCancel={allowMutations ? () => handleCancel(task) : undefined}
+                    onDelete={allowMutations ? () => handleDelete(task) : undefined}
+                    onRefresh={revalidate}
+                    extraActions={createAction}
+                    isCompleting={isTaskCompleting(task.id)}
+                  />
+                ))}
+              </List.Section>
+            ))
+          : // Flat list view for other scopes
+            tasks.map((task) => (
               <TaskListItem
                 key={task.id}
                 task={task}
@@ -327,48 +375,9 @@ export function TaskList({
                 onRefresh={revalidate}
                 extraActions={createAction}
                 isCompleting={isTaskCompleting(task.id)}
-                hideLocation
-                hideTodaySchedule
+                hideLocation={viewScope === "inbox"}
               />
             ))}
-          </List.Section>
-        ))
-      ) : isTimeGroupedView && timeGroupedTasks ? (
-        // Grouped view for "upcoming" (by time period)
-        timeGroupedTasks.map(([groupKey, groupTasks]) => (
-          <List.Section key={groupKey} title={groupKey} subtitle={`${groupTasks.length}`}>
-            {groupTasks.map((task) => (
-              <TaskListItem
-                key={task.id}
-                task={task}
-                onComplete={() => handleCompleteWithAnimation(task)}
-                onReopen={() => handleReopen(task)}
-                onCancel={allowMutations ? () => handleCancel(task) : undefined}
-                onDelete={allowMutations ? () => handleDelete(task) : undefined}
-                onRefresh={revalidate}
-                extraActions={createAction}
-                isCompleting={isTaskCompleting(task.id)}
-              />
-            ))}
-          </List.Section>
-        ))
-      ) : (
-        // Flat list view for other scopes
-        tasks.map((task) => (
-          <TaskListItem
-            key={task.id}
-            task={task}
-            onComplete={() => handleCompleteWithAnimation(task)}
-            onReopen={() => handleReopen(task)}
-            onCancel={allowMutations ? () => handleCancel(task) : undefined}
-            onDelete={allowMutations ? () => handleDelete(task) : undefined}
-            onRefresh={revalidate}
-            extraActions={createAction}
-            isCompleting={isTaskCompleting(task.id)}
-            hideLocation={viewScope === "inbox"}
-          />
-        ))
-      )}
       {!isLoading && tasks.length === 0 && (
         <List.EmptyView
           icon={config.icon}

@@ -55,9 +55,7 @@ export default async function (input: Input) {
 }
 
 export const confirmation: Tool.Confirmation<Input> = async (input) => {
-  const target = input.parentFolderId
-    ? `folder ${input.parentFolderId}`
-    : "root";
+  const target = input.parentFolderId ? `folder ${input.parentFolderId}` : "root";
 
   return {
     message: `Move ${input.folderIds.length} folder(s) to ${target}?`,

@@ -25,7 +25,11 @@ import {
 
 export default function Command() {
   const { data: spaces, isLoading, revalidate } = usePromise(getAllSpaces);
-  const { data: currentSpaceId, isLoading: isLoadingCurrentId, revalidate: revalidateCurrentId } = usePromise(getCurrentSpaceId);
+  const {
+    data: currentSpaceId,
+    isLoading: isLoadingCurrentId,
+    revalidate: revalidateCurrentId,
+  } = usePromise(getCurrentSpaceId);
 
   const handleSetCurrent = async (space: Space) => {
     try {
@@ -88,7 +92,10 @@ export default function Command() {
     <List isLoading={!isReady} selectedItemId={currentSpaceId}>
       {isReady && (
         <>
-          <List.Section title="Spaces" subtitle={spaces?.length ? `${spaces.length} space${spaces.length > 1 ? "s" : ""}` : undefined}>
+          <List.Section
+            title="Spaces"
+            subtitle={spaces?.length ? `${spaces.length} space${spaces.length > 1 ? "s" : ""}` : undefined}
+          >
             {spaces?.map((space) => (
               <List.Item
                 key={space.id}
@@ -96,66 +103,60 @@ export default function Command() {
                 icon={space.id === currentSpaceId ? { source: Icon.CircleFilled, tintColor: Color.Green } : undefined}
                 title={space.name}
                 subtitle={space.isDefault ? "from preferences" : undefined}
-            accessories={[
-              space.id === currentSpaceId ? { tag: { value: "Active", color: Color.Green } } : {},
-            ]}
-            actions={
-              <ActionPanel>
-                <ActionPanel.Section>
-                  {space.id !== currentSpaceId && (
-                    <Action
-                      title="Set as Current Space"
-                      icon={Icon.CheckCircle}
-                      onAction={() => handleSetCurrent(space)}
-                    />
-                  )}
-                  {!space.isDefault && (
-                    <Action.Push
-                      title="Edit Space"
-                      icon={Icon.Pencil}
-                      target={<EditSpaceForm space={space} onEdit={revalidate} />}
-                    />
-                  )}
-                </ActionPanel.Section>
-                <ActionPanel.Section>
-                  <Action.Push
-                    title="Add New Space"
-                    icon={Icon.Plus}
-                    target={<AddSpaceForm onAdd={revalidate} />}
-                    shortcut={{ modifiers: ["cmd"], key: "n" }}
-                  />
-                </ActionPanel.Section>
-                <ActionPanel.Section>
-                  {!space.isDefault && (
-                    <Action
-                      title="Delete Space"
-                      icon={Icon.Trash}
-                      style={Action.Style.Destructive}
-                      shortcut={{ modifiers: ["ctrl"], key: "x" }}
-                      onAction={() => handleDelete(space)}
-                    />
-                  )}
-                </ActionPanel.Section>
-              </ActionPanel>
-            }
-          />
-        ))}
-      </List.Section>
-      <List.Section>
-        <List.Item
-          icon={Icon.Plus}
-          title="Add New Space"
-          actions={
-            <ActionPanel>
-              <Action.Push
-                title="Add New Space"
-                icon={Icon.Plus}
-                target={<AddSpaceForm onAdd={revalidate} />}
+                accessories={[space.id === currentSpaceId ? { tag: { value: "Active", color: Color.Green } } : {}]}
+                actions={
+                  <ActionPanel>
+                    <ActionPanel.Section>
+                      {space.id !== currentSpaceId && (
+                        <Action
+                          title="Set as Current Space"
+                          icon={Icon.CheckCircle}
+                          onAction={() => handleSetCurrent(space)}
+                        />
+                      )}
+                      {!space.isDefault && (
+                        <Action.Push
+                          title="Edit Space"
+                          icon={Icon.Pencil}
+                          target={<EditSpaceForm space={space} onEdit={revalidate} />}
+                        />
+                      )}
+                    </ActionPanel.Section>
+                    <ActionPanel.Section>
+                      <Action.Push
+                        title="Add New Space"
+                        icon={Icon.Plus}
+                        target={<AddSpaceForm onAdd={revalidate} />}
+                        shortcut={{ modifiers: ["cmd"], key: "n" }}
+                      />
+                    </ActionPanel.Section>
+                    <ActionPanel.Section>
+                      {!space.isDefault && (
+                        <Action
+                          title="Delete Space"
+                          icon={Icon.Trash}
+                          style={Action.Style.Destructive}
+                          shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                          onAction={() => handleDelete(space)}
+                        />
+                      )}
+                    </ActionPanel.Section>
+                  </ActionPanel>
+                }
               />
-            </ActionPanel>
-          }
-        />
-      </List.Section>
+            ))}
+          </List.Section>
+          <List.Section>
+            <List.Item
+              icon={Icon.Plus}
+              title="Add New Space"
+              actions={
+                <ActionPanel>
+                  <Action.Push title="Add New Space" icon={Icon.Plus} target={<AddSpaceForm onAdd={revalidate} />} />
+                </ActionPanel>
+              }
+            />
+          </List.Section>
         </>
       )}
     </List>
@@ -169,7 +170,13 @@ interface AddSpaceFormProps {
 function AddSpaceForm({ onAdd }: AddSpaceFormProps) {
   const { pop } = useNavigation();
 
-  const handleSubmit = async (values: { name: string; documentsApiUrl: string; dailyNotesAndTasksApiUrl: string; documentsApiKey?: string; dailyNotesAndTasksApiKey?: string }) => {
+  const handleSubmit = async (values: {
+    name: string;
+    documentsApiUrl: string;
+    dailyNotesAndTasksApiUrl: string;
+    documentsApiKey?: string;
+    dailyNotesAndTasksApiKey?: string;
+  }) => {
     try {
       if (!values.name.trim()) {
         await showToast({ style: Toast.Style.Failure, title: "Name is required" });
@@ -256,7 +263,13 @@ interface EditSpaceFormProps {
 function EditSpaceForm({ space, onEdit }: EditSpaceFormProps) {
   const { pop } = useNavigation();
 
-  const handleSubmit = async (values: { name: string; documentsApiUrl: string; dailyNotesAndTasksApiUrl: string; documentsApiKey?: string; dailyNotesAndTasksApiKey?: string }) => {
+  const handleSubmit = async (values: {
+    name: string;
+    documentsApiUrl: string;
+    dailyNotesAndTasksApiUrl: string;
+    documentsApiKey?: string;
+    dailyNotesAndTasksApiKey?: string;
+  }) => {
     try {
       if (!values.name.trim()) {
         await showToast({ style: Toast.Style.Failure, title: "Name is required" });

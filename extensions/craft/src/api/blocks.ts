@@ -8,7 +8,16 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetchDocumentsApi, fetchDailyNotesApi, formatLocalDate, ItemsResponse, IdsResponse } from "./client";
+import {
+  buildUrlWithBaseUrl,
+  buildUrl,
+  buildDailyNotesUrl,
+  fetchDocumentsApi,
+  fetchDailyNotesApi,
+  formatLocalDate,
+  ItemsResponse,
+  IdsResponse,
+} from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -143,7 +152,13 @@ export interface UseBlocksOptions {
  * ```
  */
 export function useBlocks(params: GetBlocksParams, options?: UseBlocksOptions): UseBlocksResult {
-  const { documentsApiUrl, dailyNotesAndTasksApiUrl, documentsHeaders, dailyNotesAndTasksHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
+  const {
+    documentsApiUrl,
+    dailyNotesAndTasksApiUrl,
+    documentsHeaders,
+    dailyNotesAndTasksHeaders,
+    isLoading: isLoadingSpace,
+  } = useCurrentSpace();
   const hasTarget = Boolean(params.id || params.date);
   // Use Daily Notes API for date-based queries, Documents API for ID-based queries
   const baseUrl = params.date ? dailyNotesAndTasksApiUrl : documentsApiUrl;
@@ -285,9 +300,7 @@ export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
   const url = isDailyNote
     ? await buildDailyNotesUrl(ENDPOINTS.blocks, { ...params })
     : await buildUrl(ENDPOINTS.blocks, { ...params });
-  const data = isDailyNote
-    ? await fetchDailyNotesApi<Block>(url)
-    : await fetchDocumentsApi<Block>(url);
+  const data = isDailyNote ? await fetchDailyNotesApi<Block>(url) : await fetchDocumentsApi<Block>(url);
   return data.content ?? [data];
 }
 
@@ -307,9 +320,7 @@ export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
   // Use Daily Notes API for date-based positions, otherwise use Documents API
   // Both use the /blocks endpoint with the same payload structure
   const isDailyNote = "date" in params.position;
-  const url = isDailyNote
-    ? await buildDailyNotesUrl(ENDPOINTS.blocks)
-    : await buildUrl(ENDPOINTS.blocks);
+  const url = isDailyNote ? await buildDailyNotesUrl(ENDPOINTS.blocks) : await buildUrl(ENDPOINTS.blocks);
 
   const fetchFn = isDailyNote ? fetchDailyNotesApi : fetchDocumentsApi;
   const data = await fetchFn<ItemsResponse<Block>>(url, {
@@ -329,9 +340,7 @@ export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosi
   // Use Daily Notes API for date-based positions, otherwise use Documents API
   // Both use the /blocks endpoint with the same payload structure
   const isDailyNote = "date" in position;
-  const url = isDailyNote
-    ? await buildDailyNotesUrl(ENDPOINTS.blocks)
-    : await buildUrl(ENDPOINTS.blocks);
+  const url = isDailyNote ? await buildDailyNotesUrl(ENDPOINTS.blocks) : await buildUrl(ENDPOINTS.blocks);
 
   const fetchFn = isDailyNote ? fetchDailyNotesApi : fetchDocumentsApi;
   const data = await fetchFn<ItemsResponse<Block>>(url, {

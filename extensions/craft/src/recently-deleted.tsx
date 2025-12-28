@@ -1,4 +1,16 @@
-import { ActionPanel, Action, List, Icon, Color, Alert, confirmAlert, showToast, Toast, Form, useNavigation } from "@raycast/api";
+import {
+  ActionPanel,
+  Action,
+  List,
+  Icon,
+  Color,
+  Alert,
+  confirmAlert,
+  showToast,
+  Toast,
+  Form,
+  useNavigation,
+} from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
 import { useDocuments, deleteDocuments, moveDocuments, useFolders, type Document, type FlatFolder } from "./api";
@@ -94,7 +106,12 @@ export default function Command() {
             style={Action.Style.Destructive}
             onAction={handleEmptyTrash}
           />
-          <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={revalidate} shortcut={{ modifiers: ["cmd"], key: "r" }} />
+          <Action
+            title="Refresh"
+            icon={Icon.ArrowClockwise}
+            onAction={revalidate}
+            shortcut={{ modifiers: ["cmd"], key: "r" }}
+          />
         </ActionPanel>
       }
     >
@@ -117,13 +134,7 @@ export default function Command() {
                     title="Restore to Folder"
                     icon={Icon.Folder}
                     shortcut={{ modifiers: ["cmd"], key: "m" }}
-                    target={
-                      <RestoreToFolderForm
-                        document={doc}
-                        allFolders={userFolders}
-                        onRestored={revalidate}
-                      />
-                    }
+                    target={<RestoreToFolderForm document={doc} allFolders={userFolders} onRestored={revalidate} />}
                   />
                 </ActionPanel.Section>
                 <ActionPanel.Section>
@@ -142,7 +153,12 @@ export default function Command() {
                   />
                 </ActionPanel.Section>
                 <ActionPanel.Section>
-                  <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={revalidate} shortcut={{ modifiers: ["cmd"], key: "r" }} />
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={revalidate}
+                    shortcut={{ modifiers: ["cmd"], key: "r" }}
+                  />
                 </ActionPanel.Section>
               </ActionPanel>
             }
@@ -150,11 +166,7 @@ export default function Command() {
         ))}
       </List.Section>
       {!isLoading && sortedDocs.length === 0 && (
-        <List.EmptyView
-          icon={Icon.Trash}
-          title="Trash is empty"
-          description="Deleted documents will appear here"
-        />
+        <List.EmptyView icon={Icon.Trash} title="Trash is empty" description="Deleted documents will appear here" />
       )}
     </List>
   );

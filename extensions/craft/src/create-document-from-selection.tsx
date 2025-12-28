@@ -44,10 +44,7 @@ export default async function Command() {
 
     // If there's body content, insert it into the document
     if (body) {
-      await insertBlocks(
-        [{ type: "text", markdown: body }],
-        { position: "end", pageId: document.id }
-      );
+      await insertBlocks([{ type: "text", markdown: body }], { position: "end", pageId: document.id });
     }
 
     // Get the open link and open the document in Craft

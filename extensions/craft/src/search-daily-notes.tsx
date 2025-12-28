@@ -12,7 +12,11 @@ import {
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
-  const { results, isLoading: isSearching, hasQuery } = useDocumentSearch(searchText, {
+  const {
+    results,
+    isLoading: isSearching,
+    hasQuery,
+  } = useDocumentSearch(searchText, {
     fetchMetadata: true,
     location: "daily_notes",
   });
@@ -65,7 +69,10 @@ export default function Command() {
           })}
         </List.Section>
       ) : (
-        <List.Section title="Daily Notes" subtitle={sortedDailyNotes.length > 0 ? `${sortedDailyNotes.length}` : undefined}>
+        <List.Section
+          title="Daily Notes"
+          subtitle={sortedDailyNotes.length > 0 ? `${sortedDailyNotes.length}` : undefined}
+        >
           {sortedDailyNotes.map((doc, index) => (
             <DailyNoteItem key={`${doc.id}-${index}`} document={doc} />
           ))}
@@ -189,11 +196,7 @@ function SearchResultItem({
   const snippet = formatSnippet(searchMatch.markdown || "");
 
   const normalizeMarkdown = (md: string): string => {
-    return md
-      .replace(/\*\*/g, "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
+    return md.replace(/\*\*/g, "").replace(/\s+/g, " ").trim().toLowerCase();
   };
 
   const handleOpenInApp = async () => {
@@ -251,9 +254,7 @@ function SearchResultItem({
                 />
               }
             />
-            {document?.clickableLink && (
-              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
-            )}
+            {document?.clickableLink && <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />}
             {document?.clickableLink && (
               <Action.CopyToClipboard
                 title="Copy Deep Link"

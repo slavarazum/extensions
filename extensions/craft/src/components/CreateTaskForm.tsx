@@ -70,12 +70,7 @@ export function CreateTaskForm({ onTaskCreated }: CreateTaskFormProps) {
         <Form.Dropdown.Item value="dailyNote" title="Daily Note" icon={Icon.Calendar} />
       </Form.Dropdown>
       <Form.DatePicker id="scheduleDate" title="Schedule" value={scheduleDate} onChange={setScheduleDate} />
-      <Form.DatePicker
-        id="deadlineDate"
-        title="Deadline"
-        value={deadlineDate}
-        onChange={setDeadlineDate}
-      />
+      <Form.DatePicker id="deadlineDate" title="Deadline" value={deadlineDate} onChange={setDeadlineDate} />
     </Form>
   );
 }

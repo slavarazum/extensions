@@ -37,7 +37,14 @@ export default function Command() {
         </ActionPanel>
       }
     >
-      <Form.TextArea id="content" title="Content" placeholder="Enter text to add to today's daily note..." autoFocus enableMarkdown info="You can use Markdown to format the note. Pressing (⌘/ctrl + B) will add **bold** around the selected text, (⌘/ctrl + I) will make the selected text italic, etc." />
+      <Form.TextArea
+        id="content"
+        title="Content"
+        placeholder="Enter text to add to today's daily note..."
+        autoFocus
+        enableMarkdown
+        info="You can use Markdown to format the note. Pressing (⌘/ctrl + B) will add **bold** around the selected text, (⌘/ctrl + I) will make the selected text italic, etc."
+      />
       <Form.Separator />
       <Form.Dropdown id="listStyle" title="List Style" defaultValue="none" storeValue={true}>
         <Form.Dropdown.Item value="none" title="none" icon={Icon.Text} />

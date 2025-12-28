@@ -8,7 +8,15 @@
  */
 
 import { useFetch } from "@raycast/utils";
-import { buildUrlWithBaseUrl, buildUrl, buildDailyNotesUrl, fetchDocumentsApi, fetchDailyNotesApi, ItemsResponse, QueryParams } from "./client";
+import {
+  buildUrlWithBaseUrl,
+  buildUrl,
+  buildDailyNotesUrl,
+  fetchDocumentsApi,
+  fetchDailyNotesApi,
+  ItemsResponse,
+  QueryParams,
+} from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -283,10 +291,7 @@ export async function searchDailyNotes(params: SearchDailyNotesParams): Promise<
 /**
  * Create a new document
  */
-export async function createDocument(params: {
-  title: string;
-  destination?: DocumentDestination;
-}): Promise<Document> {
+export async function createDocument(params: { title: string; destination?: DocumentDestination }): Promise<Document> {
   const url = await buildUrl(ENDPOINTS.documents);
   const data = await fetchDocumentsApi<ItemsResponse<Document>>(url, {
     method: "POST",

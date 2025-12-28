@@ -1,4 +1,18 @@
-import { ActionPanel, Action, List, Icon, open, Detail, Alert, confirmAlert, showToast, Toast, Color, Form, useNavigation } from "@raycast/api";
+import {
+  ActionPanel,
+  Action,
+  List,
+  Icon,
+  open,
+  Detail,
+  Alert,
+  confirmAlert,
+  showToast,
+  Toast,
+  Color,
+  Form,
+  useNavigation,
+} from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState, useMemo } from "react";
 import {
@@ -26,10 +40,14 @@ export default function Command() {
 
   // Determine filter params based on location filter
   const isFolder = locationFilter !== "all" && locationFilter !== "unsorted";
-  const locationParam = locationFilter === "all" ? undefined : (isFolder ? undefined : locationFilter as "unsorted");
+  const locationParam = locationFilter === "all" ? undefined : isFolder ? undefined : (locationFilter as "unsorted");
   const folderIdParam = isFolder ? locationFilter : undefined;
 
-  const { results, isLoading: isSearching, hasQuery } = useDocumentSearch(searchText, {
+  const {
+    results,
+    isLoading: isSearching,
+    hasQuery,
+  } = useDocumentSearch(searchText, {
     fetchMetadata: true,
     location: locationParam,
   });
@@ -41,8 +59,16 @@ export default function Command() {
   );
 
   // Fetch recent documents - use location filter when set
-  const { documents: unfilteredDocs, isLoading: isLoadingUnfiltered, revalidate: revalidateUnfiltered } = useRecentDocuments();
-  const { documents: filteredDocs, isLoading: isLoadingFiltered, revalidate: revalidateFiltered } = useDocuments(
+  const {
+    documents: unfilteredDocs,
+    isLoading: isLoadingUnfiltered,
+    revalidate: revalidateUnfiltered,
+  } = useRecentDocuments();
+  const {
+    documents: filteredDocs,
+    isLoading: isLoadingFiltered,
+    revalidate: revalidateFiltered,
+  } = useDocuments(
     { fetchMetadata: true, location: locationParam, folderId: folderIdParam },
     { execute: locationFilter !== "all" },
   );
@@ -83,7 +109,11 @@ export default function Command() {
       searchBarPlaceholder="Search Craft documents..."
       throttle
       searchBarAccessory={
-        <List.Dropdown tooltip="Filter by Location" value={locationFilter} onChange={(v) => setLocationFilter(v as LocationFilter)}>
+        <List.Dropdown
+          tooltip="Filter by Location"
+          value={locationFilter}
+          onChange={(v) => setLocationFilter(v as LocationFilter)}
+        >
           <List.Dropdown.Section title="Locations">
             <List.Dropdown.Item title="All Documents" value="all" icon={Icon.List} />
             <List.Dropdown.Item title="Unsorted" value="unsorted" icon={Icon.Document} />
@@ -121,7 +151,12 @@ export default function Command() {
       ) : (
         <List.Section title="Recent Documents" subtitle={documents.length > 0 ? `${documents.length}` : undefined}>
           {documents.map((doc, index) => (
-            <RecentDocumentItem key={`${doc.id}-${index}`} document={doc} onDelete={revalidateDocuments} allFolders={userFolders} />
+            <RecentDocumentItem
+              key={`${doc.id}-${index}`}
+              document={doc}
+              onDelete={revalidateDocuments}
+              allFolders={userFolders}
+            />
           ))}
         </List.Section>
       )}
@@ -275,9 +310,7 @@ function SearchResultItem({
                 />
               }
             />
-            {document?.clickableLink && (
-              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
-            )}
+            {document?.clickableLink && <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />}
             <Action.CopyToClipboard
               title="Copy Document ID"
               content={searchMatch.documentId}
@@ -329,7 +362,15 @@ function SearchResultItem({
   );
 }
 
-function RecentDocumentItem({ document, onDelete, allFolders }: { document: Document; onDelete: () => void; allFolders: FlatFolder[] }) {
+function RecentDocumentItem({
+  document,
+  onDelete,
+  allFolders,
+}: {
+  document: Document;
+  onDelete: () => void;
+  allFolders: FlatFolder[];
+}) {
   const lastModified = document.lastModifiedAt ? new Date(document.lastModifiedAt).toLocaleDateString() : undefined;
 
   return (
@@ -350,7 +391,9 @@ function RecentDocumentItem({ document, onDelete, allFolders }: { document: Docu
                 />
               }
             />
-            {document.clickableLink && <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />}
+            {document.clickableLink && (
+              <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />
+            )}
             <Action.CopyToClipboard
               title="Copy Document ID"
               content={document.id}
