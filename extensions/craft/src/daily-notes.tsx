@@ -77,11 +77,13 @@ export default function Command() {
 
   const config = DATE_RANGE_CONFIG[dateRange];
   const startDate = config.days ? formatDate(new Date(Date.now() - config.days * 86400000)) : undefined;
+  // For "All" filter (no days limit), don't restrict the end date so future notes are included
+  const endDate = config.days ? "today" : undefined;
 
   const { documents, isLoading, revalidate } = useDocuments({
     location: "daily_notes",
     dailyNoteDateGte: startDate,
-    dailyNoteDateLte: "today",
+    dailyNoteDateLte: endDate,
     fetchMetadata: true,
   });
 
