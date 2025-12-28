@@ -123,6 +123,34 @@
       "mode": "view"
     },
     {
+      "name": "create-task-from-selection",
+      "title": "Create Task from Selection",
+      "subtitle": "Craft",
+      "description": "Create a task from selected text",
+      "mode": "no-view"
+    },
+    {
+      "name": "create-task-from-clipboard",
+      "title": "Create Task from Clipboard",
+      "subtitle": "Craft",
+      "description": "Create a task from clipboard content",
+      "mode": "no-view"
+    },
+    {
+      "name": "create-document-from-selection",
+      "title": "Create Document from Selection",
+      "subtitle": "Craft",
+      "description": "Create a document from selected text",
+      "mode": "no-view"
+    },
+    {
+      "name": "create-document-from-clipboard",
+      "title": "Create Document from Clipboard",
+      "subtitle": "Craft",
+      "description": "Create a document from clipboard content",
+      "mode": "no-view"
+    },
+    {
       "name": "browse-folders",
       "title": "Browse Folders",
       "subtitle": "Craft",
