@@ -10,6 +10,7 @@ import {
   Alert,
   confirmAlert,
   Color,
+  updateCommandMetadata,
 } from "@raycast/api";
 import { usePromise, showFailureToast } from "@raycast/utils";
 import {
@@ -30,6 +31,11 @@ export default function Command() {
     try {
       await setCurrentSpaceId(space.id);
       revalidateCurrentId();
+      if (!space.isDefault) {
+        await updateCommandMetadata({ subtitle: `Craft (${space.name})` });
+      } else {
+        await updateCommandMetadata({ subtitle: undefined });
+      }
       await showToast({
         style: Toast.Style.Success,
         title: "Space Selected",
