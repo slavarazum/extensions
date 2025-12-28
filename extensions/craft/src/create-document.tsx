@@ -1,14 +1,17 @@
 import { ActionPanel, Action, Form, Icon, Toast, showToast, popToRoot, open } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState } from "react";
-import { createDocument, openLink } from "./api";
+import { createDocument, openLink, useFolders } from "./api";
 
-type Destination = "unsorted" | "templates";
+type DestinationType = "unsorted" | "templates" | "folder";
 
 export default function Command() {
   const [title, setTitle] = useState("");
-  const [destination, setDestination] = useState<Destination>("unsorted");
+  const [destinationType, setDestinationType] = useState<DestinationType>("unsorted");
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { userFolders, isLoading: isLoadingFolders } = useFolders();
 
   const handleSubmit = async (openAfterCreate: boolean) => {
     const docTitle = title.trim();
@@ -17,12 +20,23 @@ export default function Command() {
       return;
     }
 
+    if (destinationType === "folder" && !selectedFolderId) {
+      await showToast({ style: Toast.Style.Failure, title: "Please select a folder" });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // Build destination based on type
+      const destination =
+        destinationType === "folder"
+          ? { folderId: selectedFolderId }
+          : { destination: destinationType as "unsorted" | "templates" };
+
       const document = await createDocument({
         title: docTitle,
-        destination: { destination },
+        destination,
       });
 
       const link = await openLink({ documentId: document.id });
@@ -56,7 +70,7 @@ export default function Command() {
 
   return (
     <Form
-      isLoading={isSubmitting}
+      isLoading={isSubmitting || isLoadingFolders}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Create Document" icon={Icon.Plus} onSubmit={() => handleSubmit(false)} />
@@ -77,14 +91,33 @@ export default function Command() {
         autoFocus
       />
       <Form.Dropdown
-        id="destination"
+        id="destinationType"
         title="Destination"
-        value={destination}
-        onChange={(value) => setDestination(value as Destination)}
+        value={destinationType}
+        onChange={(value) => setDestinationType(value as DestinationType)}
       >
         <Form.Dropdown.Item value="unsorted" title="Unsorted" icon={Icon.Document} />
         <Form.Dropdown.Item value="templates" title="Templates" icon={Icon.BlankDocument} />
+        <Form.Dropdown.Item value="folder" title="Folder..." icon={Icon.Folder} />
       </Form.Dropdown>
+      {destinationType === "folder" && (
+        <Form.Dropdown
+          id="folderId"
+          title="Folder"
+          value={selectedFolderId}
+          onChange={setSelectedFolderId}
+        >
+          <Form.Dropdown.Item value="" title="Select a folder..." icon={Icon.Folder} />
+          {userFolders.map((folder) => (
+            <Form.Dropdown.Item
+              key={folder.id}
+              value={folder.id}
+              title={"  ".repeat(folder.depth) + folder.name}
+              icon={Icon.Folder}
+            />
+          ))}
+        </Form.Dropdown>
+      )}
     </Form>
   );
 }

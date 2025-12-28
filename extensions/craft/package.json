@@ -123,6 +123,13 @@
       "mode": "view"
     },
     {
+      "name": "browse-folders",
+      "title": "Browse Folders",
+      "subtitle": "Craft",
+      "description": "Browse, create, and manage folders and their documents",
+      "mode": "view"
+    },
+    {
       "name": "manage-spaces",
       "title": "Manage Spaces",
       "subtitle": "Craft",

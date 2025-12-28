@@ -1,4 +1,4 @@
-import { ActionPanel, Action, List, Icon, open, Detail, Alert, confirmAlert, showToast, Toast, Color } from "@raycast/api";
+import { ActionPanel, Action, List, Icon, open, Detail, Alert, confirmAlert, showToast, Toast, Color, Form, useNavigation } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
 import { useState, useMemo } from "react";
 import {
@@ -9,17 +9,25 @@ import {
   searchBlocks,
   appendBlockId,
   deleteDocuments,
+  moveDocuments,
+  useFolders,
   type DocumentSearchMatch,
   type Document,
+  type FlatFolder,
 } from "./api";
 
-type LocationFilter = "all" | "unsorted";
+type LocationFilter = "all" | "unsorted" | string; // string for folder IDs
 
 export default function Command() {
   const [searchText, setSearchText] = useState("");
   const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
 
-  const locationParam = locationFilter === "all" ? undefined : locationFilter;
+  const { userFolders, isLoading: isLoadingFolders } = useFolders();
+
+  // Determine filter params based on location filter
+  const isFolder = locationFilter !== "all" && locationFilter !== "unsorted";
+  const locationParam = locationFilter === "all" ? undefined : (isFolder ? undefined : locationFilter as "unsorted");
+  const folderIdParam = isFolder ? locationFilter : undefined;
 
   const { results, isLoading: isSearching, hasQuery } = useDocumentSearch(searchText, {
     fetchMetadata: true,
@@ -28,20 +36,20 @@ export default function Command() {
 
   // Fetch all documents for documentMap when searching (to get clickableLinks)
   const { documents: allDocsForMap, isLoading: isLoadingAllDocs } = useDocuments(
-    { fetchMetadata: true, location: locationParam },
+    { fetchMetadata: true, location: locationParam, folderId: folderIdParam },
     { execute: hasQuery },
   );
 
   // Fetch recent documents - use location filter when set
   const { documents: unfilteredDocs, isLoading: isLoadingUnfiltered, revalidate: revalidateUnfiltered } = useRecentDocuments();
   const { documents: filteredDocs, isLoading: isLoadingFiltered, revalidate: revalidateFiltered } = useDocuments(
-    { fetchMetadata: true, location: "unsorted" },
-    { execute: locationFilter === "unsorted" },
+    { fetchMetadata: true, location: locationParam, folderId: folderIdParam },
+    { execute: locationFilter !== "all" },
   );
 
-  // Use filtered docs when unsorted is selected, otherwise recent docs
+  // Use filtered docs when a filter is selected, otherwise recent docs
   const documents = useMemo(() => {
-    if (locationFilter === "unsorted") {
+    if (locationFilter !== "all") {
       // Sort filtered docs by last modified (most recent first)
       return [...filteredDocs].sort((a, b) => {
         const dateA = a.lastModifiedAt ? new Date(a.lastModifiedAt).getTime() : 0;
@@ -52,8 +60,8 @@ export default function Command() {
     return unfilteredDocs;
   }, [unfilteredDocs, filteredDocs, locationFilter]);
 
-  const isLoadingDocuments = locationFilter === "unsorted" ? isLoadingFiltered : isLoadingUnfiltered;
-  const revalidateDocuments = locationFilter === "unsorted" ? revalidateFiltered : revalidateUnfiltered;
+  const isLoadingDocuments = locationFilter !== "all" ? isLoadingFiltered : isLoadingUnfiltered;
+  const revalidateDocuments = locationFilter !== "all" ? revalidateFiltered : revalidateUnfiltered;
 
   // Create a map of document ID to document info for search results
   const documentMap = useMemo(() => {
@@ -66,7 +74,7 @@ export default function Command() {
     return map;
   }, [documents, allDocsForMap, hasQuery]);
 
-  const isLoading = isSearching || (hasQuery ? isLoadingAllDocs : isLoadingDocuments);
+  const isLoading = isSearching || isLoadingFolders || (hasQuery ? isLoadingAllDocs : isLoadingDocuments);
 
   return (
     <List
@@ -76,8 +84,22 @@ export default function Command() {
       throttle
       searchBarAccessory={
         <List.Dropdown tooltip="Filter by Location" value={locationFilter} onChange={(v) => setLocationFilter(v as LocationFilter)}>
-          <List.Dropdown.Item title="All Documents" value="all" icon={Icon.List} />
-          <List.Dropdown.Item title="Unsorted" value="unsorted" icon={Icon.Document} />
+          <List.Dropdown.Section title="Locations">
+            <List.Dropdown.Item title="All Documents" value="all" icon={Icon.List} />
+            <List.Dropdown.Item title="Unsorted" value="unsorted" icon={Icon.Document} />
+          </List.Dropdown.Section>
+          {userFolders.length > 0 && (
+            <List.Dropdown.Section title="Folders">
+              {userFolders.map((folder) => (
+                <List.Dropdown.Item
+                  key={folder.id}
+                  title={"  ".repeat(folder.depth) + folder.name}
+                  value={folder.id}
+                  icon={Icon.Folder}
+                />
+              ))}
+            </List.Dropdown.Section>
+          )}
         </List.Dropdown>
       }
     >
@@ -91,6 +113,7 @@ export default function Command() {
                 searchMatch={doc}
                 document={docInfo}
                 searchText={searchText}
+                allFolders={userFolders}
               />
             );
           })}
@@ -98,7 +121,7 @@ export default function Command() {
       ) : (
         <List.Section title="Recent Documents" subtitle={documents.length > 0 ? `${documents.length}` : undefined}>
           {documents.map((doc, index) => (
-            <RecentDocumentItem key={`${doc.id}-${index}`} document={doc} onDelete={revalidateDocuments} />
+            <RecentDocumentItem key={`${doc.id}-${index}`} document={doc} onDelete={revalidateDocuments} allFolders={userFolders} />
           ))}
         </List.Section>
       )}
@@ -165,10 +188,12 @@ function SearchResultItem({
   searchMatch,
   document,
   searchText,
+  allFolders,
 }: {
   searchMatch: DocumentSearchMatch;
   document?: Document;
   searchText: string;
+  allFolders: FlatFolder[];
 }) {
   const lastModified = searchMatch.lastModifiedAt
     ? new Date(searchMatch.lastModifiedAt).toLocaleDateString()
@@ -260,6 +285,20 @@ function SearchResultItem({
             />
           </ActionPanel.Section>
           <ActionPanel.Section>
+            <Action.Push
+              title="Move to Folder"
+              icon={Icon.Folder}
+              shortcut={{ modifiers: ["cmd"], key: "m" }}
+              target={
+                <MoveDocumentToFolderForm
+                  documentId={searchMatch.documentId}
+                  documentTitle={document?.title}
+                  allFolders={allFolders}
+                />
+              }
+            />
+          </ActionPanel.Section>
+          <ActionPanel.Section>
             <Action
               title="Move to Trash"
               icon={{ source: Icon.Trash, tintColor: Color.Red }}
@@ -290,7 +329,7 @@ function SearchResultItem({
   );
 }
 
-function RecentDocumentItem({ document, onDelete }: { document: Document; onDelete: () => void }) {
+function RecentDocumentItem({ document, onDelete, allFolders }: { document: Document; onDelete: () => void; allFolders: FlatFolder[] }) {
   const lastModified = document.lastModifiedAt ? new Date(document.lastModifiedAt).toLocaleDateString() : undefined;
 
   return (
@@ -316,6 +355,21 @@ function RecentDocumentItem({ document, onDelete }: { document: Document; onDele
               title="Copy Document ID"
               content={document.id}
               shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            />
+          </ActionPanel.Section>
+          <ActionPanel.Section>
+            <Action.Push
+              title="Move to Folder"
+              icon={Icon.Folder}
+              shortcut={{ modifiers: ["cmd"], key: "m" }}
+              target={
+                <MoveDocumentToFolderForm
+                  documentId={document.id}
+                  documentTitle={document.title}
+                  allFolders={allFolders}
+                  onMoved={onDelete}
+                />
+              }
             />
           </ActionPanel.Section>
           <ActionPanel.Section>
@@ -389,5 +443,65 @@ function DocumentPreview({
         </ActionPanel>
       }
     />
+  );
+}
+
+function MoveDocumentToFolderForm({
+  documentId,
+  documentTitle,
+  allFolders,
+  onMoved,
+}: {
+  documentId: string;
+  documentTitle?: string;
+  allFolders: FlatFolder[];
+  onMoved?: () => void;
+}) {
+  const { pop } = useNavigation();
+  const [destination, setDestination] = useState<string>("unsorted");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      if (destination === "unsorted" || destination === "templates") {
+        await moveDocuments([documentId], { destination });
+      } else {
+        await moveDocuments([documentId], { folderId: destination });
+      }
+      await showToast({ style: Toast.Style.Success, title: "Document Moved", message: documentTitle });
+      onMoved?.();
+      pop();
+    } catch (error) {
+      showFailureToast(error, { title: "Failed to move document" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Form
+      isLoading={isSubmitting}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Move Document" icon={Icon.ArrowRight} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description title="Moving" text={documentTitle || "Untitled"} />
+      <Form.Dropdown id="destination" title="Destination" value={destination} onChange={setDestination}>
+        <Form.Dropdown.Section title="Locations">
+          <Form.Dropdown.Item value="unsorted" title="Unsorted" icon={Icon.Document} />
+          <Form.Dropdown.Item value="templates" title="Templates" icon={Icon.BlankDocument} />
+        </Form.Dropdown.Section>
+        {allFolders.length > 0 && (
+          <Form.Dropdown.Section title="Folders">
+            {allFolders.map((f) => (
+              <Form.Dropdown.Item key={f.id} value={f.id} title={"  ".repeat(f.depth) + f.name} icon={Icon.Folder} />
+            ))}
+          </Form.Dropdown.Section>
+        )}
+      </Form.Dropdown>
+    </Form>
   );
 }

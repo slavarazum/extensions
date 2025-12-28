@@ -25,7 +25,7 @@ import {
 
 export default function Command() {
   const { data: spaces, isLoading, revalidate } = usePromise(getAllSpaces);
-  const { data: currentSpaceId, revalidate: revalidateCurrentId } = usePromise(getCurrentSpaceId);
+  const { data: currentSpaceId, isLoading: isLoadingCurrentId, revalidate: revalidateCurrentId } = usePromise(getCurrentSpaceId);
 
   const handleSetCurrent = async (space: Space) => {
     try {
@@ -81,15 +81,23 @@ export default function Command() {
     }
   };
 
+  console.log(currentSpaceId, spaces);
+
+  // Don't render items until currentSpaceId is available so selectedItemId works correctly
+  const isReady = !isLoading && !isLoadingCurrentId && currentSpaceId;
+
   return (
-    <List isLoading={isLoading}>
-      <List.Section title="Spaces" subtitle={spaces?.length ? `${spaces.length} space${spaces.length > 1 ? "s" : ""}` : undefined}>
-        {spaces?.map((space) => (
-          <List.Item
-            key={space.id}
-            icon={space.id === currentSpaceId ? { source: Icon.CircleFilled, tintColor: Color.Green } : undefined}
-            title={space.name}
-            subtitle={space.isDefault ? "from preferences" : undefined}
+    <List isLoading={!isReady} selectedItemId={currentSpaceId}>
+      {isReady && (
+        <>
+          <List.Section title="Spaces" subtitle={spaces?.length ? `${spaces.length} space${spaces.length > 1 ? "s" : ""}` : undefined}>
+            {spaces?.map((space) => (
+              <List.Item
+                key={space.id}
+                id={space.id}
+                icon={space.id === currentSpaceId ? { source: Icon.CircleFilled, tintColor: Color.Green } : undefined}
+                title={space.name}
+                subtitle={space.isDefault ? "from preferences" : undefined}
             accessories={[
               space.id === currentSpaceId ? { tag: { value: "Active", color: Color.Green } } : {},
             ]}
@@ -150,6 +158,8 @@ export default function Command() {
           }
         />
       </List.Section>
+        </>
+      )}
     </List>
   );
 }

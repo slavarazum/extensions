@@ -110,6 +110,16 @@ export {
   // Types
   type Folder,
   type FolderDestination,
+  type FlatFolder,
+  type UseFoldersResult,
+  type SystemFolderId,
+  // Constants
+  SYSTEM_FOLDER_IDS,
+  // Helper functions
+  flattenFolders,
+  isSystemFolder,
+  // Hooks
+  useFolders,
   // Async functions (for tools)
   fetchFolders,
   createFolders,
