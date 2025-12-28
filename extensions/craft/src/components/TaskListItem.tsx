@@ -13,6 +13,8 @@ export interface TaskListItemProps {
   isCompleting?: boolean;
   /** Hide the location badge (e.g., when viewing inbox tasks) */
   hideLocation?: boolean;
+  /** Hide "Today" schedule date (e.g., when viewing today's tasks) */
+  hideTodaySchedule?: boolean;
 }
 
 export function TaskListItem({
@@ -25,11 +27,12 @@ export function TaskListItem({
   extraActions,
   isCompleting = false,
   hideLocation = false,
+  hideTodaySchedule = false,
 }: TaskListItemProps) {
   const stateIcon = isCompleting
     ? { source: Icon.CheckCircle, tintColor: Color.Green }
     : getStateIcon(task.taskInfo.state);
-  const accessories = buildAccessories(task, hideLocation);
+  const accessories = buildAccessories(task, hideLocation, hideTodaySchedule);
 
   return (
     <List.Item
@@ -99,31 +102,39 @@ export function TaskListItem({
   );
 }
 
-function buildAccessories(task: Task, hideLocation: boolean): List.Item.Accessory[] {
+function buildAccessories(task: Task, hideLocation: boolean, hideTodaySchedule: boolean): List.Item.Accessory[] {
   const accessories: List.Item.Accessory[] = [];
   const today = formatLocalDate(new Date());
 
-  // Add schedule date (red if overdue)
+  // Add schedule date (red if overdue, skip "Today" if hideTodaySchedule is true)
   if (task.taskInfo.scheduleDate) {
+    const isToday = task.taskInfo.scheduleDate === today;
     const isOverdue = task.taskInfo.state === "todo" && task.taskInfo.scheduleDate < today;
-    const scheduleFormatted = formatScheduleDate(task.taskInfo.scheduleDate, today);
-    if (isOverdue) {
-      accessories.push({
-        tag: { value: scheduleFormatted, color: Color.Red },
-        tooltip: "Overdue",
-      });
-    } else {
-      accessories.push({ text: scheduleFormatted, tooltip: "Scheduled" });
+
+    // Skip showing "Today" schedule in today view (it's redundant)
+    if (!(hideTodaySchedule && isToday)) {
+      const scheduleFormatted = formatScheduleDate(task.taskInfo.scheduleDate, today);
+      if (isOverdue) {
+        accessories.push({
+          tag: { value: scheduleFormatted, color: Color.Red },
+          tooltip: "Overdue",
+        });
+      } else {
+        accessories.push({ text: scheduleFormatted, tooltip: "Scheduled" });
+      }
     }
   }
 
-  // Add deadline with flag icon (matching Craft app style)
+  // Add deadline with flag icon on gray background (matching Craft app style)
   if (task.taskInfo.deadlineDate) {
     const deadlineFormatted = formatDeadlineDate(task.taskInfo.deadlineDate, today);
-    const isToday = task.taskInfo.deadlineDate === today;
+    const isOverdue = task.taskInfo.state === "todo" && task.taskInfo.deadlineDate < today;
     accessories.push({
-      icon: { source: Icon.Flag, tintColor: isToday ? Color.Blue : undefined },
-      tag: { value: deadlineFormatted, color: isToday ? Color.Blue : undefined },
+      icon: { source: Icon.Flag, tintColor: isOverdue ? Color.Red : Color.SecondaryText },
+      tag: {
+        value: deadlineFormatted,
+        color: isOverdue ? Color.Red : Color.SecondaryText,
+      },
       tooltip: "Deadline",
     });
   }
