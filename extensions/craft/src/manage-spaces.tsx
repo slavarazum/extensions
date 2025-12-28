@@ -81,8 +81,6 @@ export default function Command() {
     }
   };
 
-  console.log(currentSpaceId, spaces);
-
   // Don't render items until currentSpaceId is available so selectedItemId works correctly
   const isReady = !isLoading && !isLoadingCurrentId && currentSpaceId;
 

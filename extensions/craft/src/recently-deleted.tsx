@@ -40,7 +40,7 @@ export default function Command() {
     if (!confirmed) return;
 
     try {
-      console.log(await deleteDocuments([doc.id]));
+      await deleteDocuments([doc.id]);
       await showToast({ style: Toast.Style.Success, title: "Deleted permanently" });
       revalidate();
     } catch (error) {

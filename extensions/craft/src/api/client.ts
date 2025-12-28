@@ -130,15 +130,10 @@ export function buildHeaders(apiKey?: string): HeadersInit {
 export async function fetch<T>(url: string, options?: RequestInit & { apiKey?: string }): Promise<T> {
   const { apiKey, ...fetchOptions } = options ?? {};
 
-  console.log(`[Craft API] Request: ${fetchOptions.method ?? "GET"} ${url}`);
-  console.log(`[Craft API] API Key provided: ${apiKey ? "yes (length: " + apiKey.length + ")" : "no"}`);
-
   const headers = {
     ...buildHeaders(apiKey),
     ...fetchOptions?.headers,
   };
-
-  console.log(`[Craft API] Headers:`, JSON.stringify(headers));
 
   const response = await globalThis.fetch(url, {
     ...fetchOptions,
