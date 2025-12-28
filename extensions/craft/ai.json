@@ -1,0 +1,469 @@
+{
+  "instructions": "This extension integrates with Craft.do document management system.\n\n## Document Organization\n- Documents are organized in folders (locations)\n- Built-in locations: unsorted, trash, templates, daily_notes\n- Use list-folders first to discover available locations and their document counts\n\n## Daily Notes\n- Date-based documents accessed by date (YYYY-MM-DD, 'today', 'tomorrow', 'yesterday')\n- Great for journaling and daily task management\n\n## Tasks\n- Scopes: inbox (unscheduled), active (due now), upcoming (scheduled), logbook (completed/cancelled)\n- Tasks can be scheduled with dates and deadlines\n- Marking tasks as done/cancelled moves them to logbook\n\n## Collections\n- Structured data tables within documents\n- Always use get-collection-schema before adding/updating items\n- Properties must match the collection schema\n\n## Best Practices\n- Don't show entity IDs to users unless specifically requested\n- Use descriptive responses mentioning document/task titles\n- When creating content, confirm the action was successful with relevant details",
+  "evals": [
+    {
+      "input": "@craft what are my tasks for today?",
+      "mocks": {
+        "use-tasks": {
+          "scope": "active",
+          "totalTasks": 3,
+          "tasks": [
+            { "id": "task-1", "content": "Review project proposal", "state": "todo", "scheduled": "2024-12-28" },
+            { "id": "task-2", "content": "Send weekly report", "state": "todo", "deadline": "2024-12-28" },
+            { "id": "task-3", "content": "Team standup at 10am", "state": "todo", "scheduled": "2024-12-28" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": { "name": "use-tasks", "arguments": { "scope": "active" } } }
+      ]
+    },
+    {
+      "input": "@craft show me my upcoming tasks",
+      "mocks": {
+        "use-tasks": {
+          "scope": "upcoming",
+          "totalTasks": 2,
+          "tasks": [
+            { "id": "task-1", "content": "Prepare quarterly presentation", "state": "todo", "scheduled": "2024-12-30" },
+            { "id": "task-2", "content": "Book flight for conference", "state": "todo", "deadline": "2025-01-05" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": { "name": "use-tasks", "arguments": { "scope": "upcoming" } } }
+      ]
+    },
+    {
+      "input": "@craft what's in my task inbox?",
+      "mocks": {
+        "use-tasks": {
+          "scope": "inbox",
+          "totalTasks": 2,
+          "tasks": [
+            { "id": "task-1", "content": "Buy groceries", "state": "todo" },
+            { "id": "task-2", "content": "Call mom", "state": "todo" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": { "name": "use-tasks", "arguments": { "scope": "inbox" } } }
+      ]
+    },
+    {
+      "input": "@craft add a task to buy milk",
+      "mocks": {
+        "create-task": {
+          "success": true,
+          "task": { "id": "new-task-1", "content": "Buy milk", "state": "todo" }
+        }
+      },
+      "expected": [
+        { "callsTool": "create-task" },
+        { "meetsCriteria": "Confirms the task was created successfully" }
+      ]
+    },
+    {
+      "input": "@craft create a task to prepare presentation for tomorrow",
+      "mocks": {
+        "create-task": {
+          "success": true,
+          "task": { "id": "new-task-2", "content": "Prepare presentation", "state": "todo", "scheduled": "tomorrow" }
+        }
+      },
+      "expected": [
+        { "callsTool": "create-task" }
+      ]
+    },
+    {
+      "input": "@craft add a task with deadline next Friday: submit expense report",
+      "mocks": {
+        "create-task": {
+          "success": true,
+          "task": { "id": "new-task-3", "content": "Submit expense report", "state": "todo", "deadline": "2025-01-03" }
+        }
+      },
+      "expected": [
+        { "callsTool": "create-task" }
+      ]
+    },
+    {
+      "input": "@craft mark the 'Review project proposal' task as done",
+      "mocks": {
+        "use-tasks": {
+          "scope": "active",
+          "totalTasks": 1,
+          "tasks": [{ "id": "task-abc123", "content": "Review project proposal", "state": "todo" }]
+        },
+        "update-task": { "success": true, "message": "Task marked as done" }
+      },
+      "expected": [
+        { "callsTool": "use-tasks" }
+      ]
+    },
+    {
+      "input": "@craft show me my completed tasks",
+      "mocks": {
+        "use-tasks": {
+          "scope": "logbook",
+          "totalTasks": 2,
+          "tasks": [
+            { "id": "task-1", "content": "Finish quarterly report", "state": "done" },
+            { "id": "task-2", "content": "Submit travel expenses", "state": "done" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": { "name": "use-tasks", "arguments": { "scope": "logbook" } } }
+      ]
+    },
+    {
+      "input": "@craft search for documents about project roadmap",
+      "mocks": {
+        "search-documents": {
+          "totalResults": 2,
+          "query": "project roadmap",
+          "results": [
+            { "index": 1, "documentId": "doc-1", "matchSnippet": "Q4 **project roadmap** planning" },
+            { "index": 2, "documentId": "doc-2", "matchSnippet": "Updated **project roadmap** for 2025" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "search-documents" }
+      ]
+    },
+    {
+      "input": "@craft list all my documents",
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 3,
+          "documents": [
+            { "id": "doc-1", "title": "Project Notes" },
+            { "id": "doc-2", "title": "Meeting Minutes" },
+            { "id": "doc-3", "title": "Ideas" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "list-documents" }
+      ]
+    },
+    {
+      "input": "@craft create a new document called 'Meeting Notes - December'",
+      "mocks": {
+        "create-document": {
+          "success": true,
+          "document": { "id": "new-doc-1", "title": "Meeting Notes - December" }
+        }
+      },
+      "expected": [
+        { "callsTool": "create-document" }
+      ]
+    },
+    {
+      "input": "@craft show me documents in trash",
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 1,
+          "location": "trash",
+          "documents": [{ "id": "doc-trash-1", "title": "Old Draft" }]
+        }
+      },
+      "expected": [
+        { "callsTool": { "name": "list-documents", "arguments": { "location": "trash" } } }
+      ]
+    },
+    {
+      "input": "@craft what folders do I have?",
+      "mocks": {
+        "list-folders": {
+          "totalFolders": 4,
+          "folders": [
+            { "id": "unsorted", "name": "Unsorted", "documentCount": 5 },
+            { "id": "folder-1", "name": "Work", "documentCount": 12 },
+            { "id": "folder-2", "name": "Personal", "documentCount": 8 },
+            { "id": "folder-3", "name": "Archive", "documentCount": 25 }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "list-folders" }
+      ]
+    },
+    {
+      "input": "@craft create a folder called 'Projects'",
+      "mocks": {
+        "create-folders": {
+          "success": true,
+          "createdCount": 1,
+          "folders": [{ "id": "new-folder-1", "name": "Projects" }]
+        }
+      },
+      "expected": [
+        { "callsTool": "create-folders" },
+        { "includes": "Projects" }
+      ]
+    },
+    {
+      "input": "@craft show me today's daily note",
+      "mocks": {
+        "get-blocks": {
+          "totalBlocks": 3,
+          "date": "today",
+          "blocks": [
+            { "id": "block-1", "type": "text", "textStyle": "body", "content": "Morning routine completed" },
+            { "id": "block-2", "type": "text", "textStyle": "body", "content": "Had a productive meeting with the team" },
+            { "id": "block-3", "type": "text", "listStyle": "task", "content": "Follow up on action items", "taskInfo": { "state": "todo" } }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "get-blocks" }
+      ]
+    },
+    {
+      "input": "@craft add 'Had a great lunch meeting' to today's daily note",
+      "mocks": {
+        "insert-blocks": {
+          "success": true,
+          "insertedCount": 1,
+          "blocks": [{ "id": "new-block-1", "type": "text", "content": "Had a great lunch meeting" }]
+        }
+      },
+      "expected": [
+        { "callsTool": "insert-blocks" }
+      ]
+    },
+    {
+      "input": "@craft search my daily notes for meetings last week",
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 0,
+          "documents": []
+        },
+        "search-documents": {
+          "totalResults": 0,
+          "results": []
+        },
+        "search-daily-notes": {
+          "totalResults": 3,
+          "query": "meetings",
+          "results": [
+            { "documentId": "daily-2024-12-23", "matchSnippet": "Team **meetings** went well" },
+            { "documentId": "daily-2024-12-24", "matchSnippet": "Cancelled **meetings** due to holiday" },
+            { "documentId": "daily-2024-12-26", "matchSnippet": "Back-to-back **meetings** today" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "search-daily-notes" }
+      ]
+    },
+    {
+      "input": "@craft what did I do yesterday?",
+      "mocks": {
+        "get-blocks": {
+          "totalBlocks": 2,
+          "date": "yesterday",
+          "blocks": [
+            { "id": "block-1", "type": "text", "content": "Finished the quarterly report" },
+            { "id": "block-2", "type": "text", "content": "Started planning for next sprint" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "get-blocks" }
+      ]
+    },
+    {
+      "input": "@craft read the content of my Project Notes document",
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 1,
+          "documents": [{ "id": "doc-proj", "title": "Project Notes" }]
+        },
+        "search-documents": {
+          "totalResults": 1,
+          "query": "Project Notes",
+          "results": [{ "documentId": "doc-proj", "matchSnippet": "**Project Notes**" }]
+        },
+        "get-blocks": {
+          "totalBlocks": 2,
+          "blockId": "doc-proj",
+          "blocks": [
+            { "id": "block-1", "type": "text", "textStyle": "h1", "content": "Project Notes" },
+            { "id": "block-2", "type": "text", "content": "Key milestones and deadlines for Q1" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "get-blocks" }
+      ]
+    },
+    {
+      "input": "@craft add a heading 'Summary' to my Meeting Notes document",
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 1,
+          "documents": [{ "id": "doc-meeting", "title": "Meeting Notes" }]
+        },
+        "list-folders": {
+          "totalFolders": 1,
+          "folders": [{ "id": "unsorted", "name": "Unsorted", "documentCount": 1 }]
+        },
+        "search-documents": {
+          "totalResults": 1,
+          "query": "Meeting Notes",
+          "results": [{ "documentId": "doc-meeting", "matchSnippet": "Meeting Notes" }]
+        },
+        "get-blocks": {
+          "totalBlocks": 1,
+          "blockId": "doc-meeting",
+          "blocks": [{ "id": "block-1", "type": "text", "content": "Meeting notes content" }]
+        },
+        "insert-blocks": {
+          "success": true,
+          "insertedCount": 1,
+          "blocks": [{ "id": "new-block-1", "type": "text", "textStyle": "h2", "content": "Summary" }]
+        }
+      },
+      "expected": [
+        { "callsTool": "insert-blocks" }
+      ]
+    },
+    {
+      "input": "@craft list all collections in my workspace",
+      "mocks": {
+        "list-collections": {
+          "totalCollections": 2,
+          "collections": [
+            { "id": "coll-1", "title": "Reading List", "documentId": "doc-1" },
+            { "id": "coll-2", "title": "Project Tracker", "documentId": "doc-2" }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "list-collections" },
+        { "includes": "Reading List" }
+      ]
+    },
+    {
+      "input": "@craft show items in my Reading List collection",
+      "mocks": {
+        "list-collections": {
+          "totalCollections": 1,
+          "collections": [{ "id": "coll-reading", "title": "Reading List" }]
+        },
+        "get-collection-items": {
+          "collectionId": "coll-reading",
+          "totalItems": 2,
+          "items": [
+            { "id": "item-1", "title": "Atomic Habits", "properties": { "status": "Reading", "author": "James Clear" } },
+            { "id": "item-2", "title": "Deep Work", "properties": { "status": "To Read", "author": "Cal Newport" } }
+          ]
+        }
+      },
+      "expected": [
+        { "callsTool": "list-collections" }
+      ]
+    },
+    {
+      "input": "@craft add 'The Pragmatic Programmer' to my Reading List",
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 1,
+          "documents": [{ "id": "doc-1", "title": "Reading List" }]
+        },
+        "list-folders": {
+          "totalFolders": 1,
+          "folders": [{ "id": "unsorted", "name": "Unsorted", "documentCount": 1 }]
+        },
+        "search-documents": {
+          "totalResults": 1,
+          "query": "Reading List",
+          "results": [{ "documentId": "doc-1", "matchSnippet": "**Reading List**" }]
+        },
+        "get-blocks": {
+          "totalBlocks": 1,
+          "blockId": "doc-1",
+          "blocks": [{ "id": "block-1", "type": "text", "content": "Reading list content" }]
+        },
+        "insert-blocks": {
+          "success": true,
+          "insertedCount": 1,
+          "blocks": [{ "id": "new-block-1", "type": "text", "content": "The Pragmatic Programmer" }]
+        },
+        "list-collections": {
+          "totalCollections": 1,
+          "collections": [{ "id": "coll-reading", "title": "Reading List" }]
+        },
+        "get-collection-schema": {
+          "collectionId": "coll-reading",
+          "format": "json-schema-items",
+          "schema": {
+            "key": "reading-list",
+            "name": "Reading List",
+            "properties": [
+              { "key": "title", "name": "Title", "type": "string" },
+              { "key": "status", "name": "Status", "type": "select", "options": ["To Read", "Reading", "Completed"] },
+              { "key": "author", "name": "Author", "type": "string" }
+            ]
+          }
+        },
+        "add-collection-items": { "success": true, "addedCount": 1, "collectionId": "coll-reading", "items": [{ "id": "new-item-1", "title": "The Pragmatic Programmer" }] }
+      },
+      "expected": [
+        { "callsTool": "get-blocks" }
+      ]
+    },
+    {
+      "input": "@craft search for documents about xyz123abc",
+      "usedAsExample": false,
+      "mocks": {
+        "search-documents": { "totalResults": 0, "query": "xyz123abc", "results": [] }
+      },
+      "expected": [
+        { "callsTool": "search-documents" }
+      ]
+    },
+    {
+      "input": "@craft delete the document called 'Old Draft'",
+      "usedAsExample": false,
+      "mocks": {
+        "list-documents": {
+          "totalDocuments": 1,
+          "documents": [{ "id": "doc-old", "title": "Old Draft" }]
+        },
+        "search-documents": {
+          "totalResults": 1,
+          "query": "Old Draft",
+          "results": [{ "documentId": "doc-old", "matchSnippet": "**Old Draft**" }]
+        },
+        "delete-documents": { "success": true, "deletedCount": 1, "deletedDocumentIds": ["doc-old"] }
+      },
+      "expected": [
+        { "callsTool": "search-documents" }
+      ]
+    },
+    {
+      "input": "@craft schedule all my inbox tasks for today",
+      "usedAsExample": false,
+      "mocks": {
+        "use-tasks": {
+          "scope": "inbox",
+          "totalTasks": 2,
+          "tasks": [
+            { "id": "inbox-1", "content": "Buy groceries", "state": "todo" },
+            { "id": "inbox-2", "content": "Call dentist", "state": "todo" }
+          ]
+        },
+        "search-daily-notes": { "totalResults": 0, "results": [] },
+        "update-task": { "success": true }
+      },
+      "expected": [
+        { "callsTool": { "name": "use-tasks", "arguments": { "scope": "inbox" } } }
+      ]
+    }
+  ]
+}

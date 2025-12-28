@@ -1,0 +1,352 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "craft",
+  "title": "Craft",
+  "description": "Craft.do integration with API & MCP.",
+  "icon": "icon.png",
+  "author": "slavarazum",
+  "platforms": [
+    "macOS",
+    "Windows"
+  ],
+  "categories": [
+    "Productivity",
+    "Data"
+  ],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "search-documents",
+      "title": "Search Documents",
+      "subtitle": "Craft",
+      "description": "Search all documents in Craft",
+      "mode": "view"
+    },
+    {
+      "name": "add-to-daily-note",
+      "title": "Add to Daily Note",
+      "subtitle": "Craft",
+      "description": "Quickly add content to today's daily note",
+      "mode": "view"
+    },
+    {
+      "name": "daily-notes",
+      "title": "Daily Notes",
+      "subtitle": "Craft",
+      "description": "View and navigate your daily notes",
+      "mode": "view"
+    },
+    {
+      "name": "search-daily-notes",
+      "title": "Search Daily Notes",
+      "subtitle": "Craft",
+      "description": "Search content within daily notes",
+      "mode": "view"
+    },
+    {
+      "name": "tasks",
+      "title": "Tasks",
+      "subtitle": "Craft",
+      "description": "View and manage all tasks",
+      "mode": "view"
+    },
+    {
+      "name": "upcoming-tasks",
+      "title": "Upcoming Tasks",
+      "subtitle": "Craft",
+      "description": "View scheduled and upcoming tasks",
+      "mode": "view"
+    },
+    {
+      "name": "inbox-tasks",
+      "title": "Inbox Tasks",
+      "subtitle": "Craft",
+      "description": "View tasks in your inbox",
+      "mode": "view"
+    },
+    {
+      "name": "logbook-tasks",
+      "title": "Task Logbook",
+      "subtitle": "Craft",
+      "description": "View completed and canceled tasks",
+      "mode": "view"
+    },
+    {
+      "name": "recently-deleted",
+      "title": "Recently Deleted",
+      "subtitle": "Craft",
+      "description": "View and permanently delete trashed documents",
+      "mode": "view"
+    },
+    {
+      "name": "today-tasks",
+      "title": "Today's Tasks",
+      "subtitle": "Craft",
+      "description": "View today's tasks grouped by location",
+      "mode": "view"
+    },
+    {
+      "name": "add-task",
+      "title": "Create Task",
+      "subtitle": "Craft",
+      "description": "Create a new task in Craft",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "task",
+          "placeholder": "Task",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "schedule",
+          "placeholder": "Schedule (today, tomorrow, 2024-12-25)",
+          "type": "text",
+          "required": false
+        },
+        {
+          "name": "deadline",
+          "placeholder": "Deadline (today, tomorrow, 2024-12-25)",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "create-document",
+      "title": "Create Document",
+      "subtitle": "Craft",
+      "description": "Create a new document in Craft",
+      "mode": "view"
+    },
+    {
+      "name": "create-task-from-selection",
+      "title": "Create Task from Selection",
+      "subtitle": "Craft",
+      "description": "Create a task from selected text",
+      "mode": "no-view"
+    },
+    {
+      "name": "create-task-from-clipboard",
+      "title": "Create Task from Clipboard",
+      "subtitle": "Craft",
+      "description": "Create a task from clipboard content",
+      "mode": "no-view"
+    },
+    {
+      "name": "create-document-from-selection",
+      "title": "Create Document from Selection",
+      "subtitle": "Craft",
+      "description": "Create a document from selected text",
+      "mode": "no-view"
+    },
+    {
+      "name": "create-document-from-clipboard",
+      "title": "Create Document from Clipboard",
+      "subtitle": "Craft",
+      "description": "Create a document from clipboard content",
+      "mode": "no-view"
+    },
+    {
+      "name": "browse-folders",
+      "title": "Browse Folders",
+      "subtitle": "Craft",
+      "description": "Browse, create, and manage folders and their documents",
+      "mode": "view"
+    },
+    {
+      "name": "manage-spaces",
+      "title": "Manage Spaces",
+      "subtitle": "Craft",
+      "description": "Add, edit, and switch between Craft spaces",
+      "mode": "view"
+    }
+  ],
+  "tools": [
+    {
+      "name": "search-documents",
+      "title": "Search Documents",
+      "description": "Search content across all documents in the Craft space using relevance-based ranking. Supports filtering by location, date ranges, and folders."
+    },
+    {
+      "name": "search-blocks",
+      "title": "Search Blocks",
+      "description": "Search content within a specific document or page block. Supports plain text and regex patterns. Returns matching blocks with before/after context."
+    },
+    {
+      "name": "search-daily-notes",
+      "title": "Search Daily Notes",
+      "description": "Search content across multiple daily notes using relevance-based ranking. Supports date range filtering."
+    },
+    {
+      "name": "use-tasks",
+      "title": "Get Tasks",
+      "description": "Retrieve tasks from the Craft space. Filter by scope: active (due tasks), upcoming (scheduled), inbox, logbook (completed/cancelled), or document."
+    },
+    {
+      "name": "get-blocks",
+      "title": "Get Blocks",
+      "description": "Fetch blocks from a document or daily note. Use document ID to get document content, or date to get a daily note."
+    },
+    {
+      "name": "insert-blocks",
+      "title": "Insert Blocks",
+      "description": "Insert new blocks into a document or daily note. Supports text, headings, lists, tasks, and other block types."
+    },
+    {
+      "name": "update-blocks",
+      "title": "Update Blocks",
+      "description": "Update existing blocks in a document. Can modify content, task state, and other properties."
+    },
+    {
+      "name": "delete-blocks",
+      "title": "Delete Blocks",
+      "description": "Delete blocks from a document by their IDs."
+    },
+    {
+      "name": "move-blocks",
+      "title": "Move Blocks",
+      "description": "Move blocks to a new position within the same document or to a different document/daily note."
+    },
+    {
+      "name": "list-documents",
+      "title": "List Documents",
+      "description": "List documents in the Craft space. Filter by location, folder, or date ranges."
+    },
+    {
+      "name": "create-document",
+      "title": "Create Document",
+      "description": "Create a new document in the Craft space. Specify destination folder or location."
+    },
+    {
+      "name": "delete-documents",
+      "title": "Delete Documents",
+      "description": "Delete documents by moving them to trash. Documents already in trash are permanently deleted."
+    },
+    {
+      "name": "move-documents",
+      "title": "Move Documents",
+      "description": "Move documents between locations or folders. Can restore documents from trash."
+    },
+    {
+      "name": "list-folders",
+      "title": "List Folders",
+      "description": "List all folders in the Craft space with document counts and hierarchical structure."
+    },
+    {
+      "name": "create-folders",
+      "title": "Create Folders",
+      "description": "Create new folders at root level or nested inside existing folders."
+    },
+    {
+      "name": "delete-folders",
+      "title": "Delete Folders",
+      "description": "Delete folders. Contents are moved to parent folder or Unsorted."
+    },
+    {
+      "name": "move-folders",
+      "title": "Move Folders",
+      "description": "Move folders to root level or inside other folders."
+    },
+    {
+      "name": "create-task",
+      "title": "Create Task",
+      "description": "Create a new task in inbox or daily notes. Supports schedule dates and deadlines."
+    },
+    {
+      "name": "update-task",
+      "title": "Update Task",
+      "description": "Update a task's state, schedule date, or deadline. Marking as done/cancelled moves to logbook."
+    },
+    {
+      "name": "delete-task",
+      "title": "Delete Task",
+      "description": "Delete a task from inbox, logbook, or daily notes."
+    },
+    {
+      "name": "list-collections",
+      "title": "List Collections",
+      "description": "List all collections across documents or daily notes. Filter by document or date range."
+    },
+    {
+      "name": "get-collection-schema",
+      "title": "Get Collection Schema",
+      "description": "Get the schema of a collection including property definitions and types."
+    },
+    {
+      "name": "get-collection-items",
+      "title": "Get Collection Items",
+      "description": "Get all items from a collection with their properties and content."
+    },
+    {
+      "name": "add-collection-items",
+      "title": "Add Collection Items",
+      "description": "Add new items to a collection. Items must match the collection schema."
+    },
+    {
+      "name": "update-collection-items",
+      "title": "Update Collection Items",
+      "description": "Update existing items in a collection."
+    },
+    {
+      "name": "delete-collection-items",
+      "title": "Delete Collection Items",
+      "description": "Delete items from a collection including their nested content."
+    }
+  ],
+  "preferences": [
+    {
+      "name": "documentsApiUrl",
+      "title": "Documents API URL",
+      "description": "Your Craft Documents API URL. Get it from Craft Settings > API Access.",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
+    },
+    {
+      "name": "documentsApiKey",
+      "title": "Documents API Key",
+      "description": "Optional API key for Documents connection. Create one in Craft API connection settings for enhanced security.",
+      "type": "password",
+      "required": false,
+      "placeholder": "Optional"
+    },
+    {
+      "name": "dailyNotesAndTasksApiUrl",
+      "title": "Daily Notes & Tasks API URL",
+      "description": "Your Craft Daily Notes & Tasks API URL. Get it from Craft Settings > API Access.",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://connect.craft.do/links/YOUR_LINK_ID/api/v1"
+    },
+    {
+      "name": "dailyNotesAndTasksApiKey",
+      "title": "Daily Notes & Tasks API Key",
+      "description": "Optional API key for Daily Notes & Tasks connection. Create one in Craft API connection settings for enhanced security.",
+      "type": "password",
+      "required": false,
+      "placeholder": "Optional"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.104.1",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.0.4",
+    "@types/node": "22.13.10",
+    "@types/react": "19.0.10",
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
+    "react-devtools": "^6.1.1",
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
