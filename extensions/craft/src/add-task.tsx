@@ -1,6 +1,6 @@
-import { ActionPanel, Action, Form, Icon, Toast, showToast, LaunchProps } from "@raycast/api";
+import { ActionPanel, Action, Form, Icon, Toast, showToast, LaunchProps, popToRoot } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createTask, formatLocalDate, type CreateTaskParams } from "./api";
 
 interface AddTaskArguments {
@@ -39,19 +39,53 @@ function parseDate(dateStr: string | undefined): Date | null {
 
 export default function Command(props: LaunchProps<{ arguments: AddTaskArguments }>) {
   const { task: taskArgument, schedule: scheduleArgument, deadline: deadlineArgument } = props.arguments;
+  const hasQuickArguments = !!taskArgument?.trim();
 
   const [markdown, setMarkdown] = useState(taskArgument || "");
   const [scheduleDate, setScheduleDate] = useState<Date | null>(parseDate(scheduleArgument));
   const [deadlineDate, setDeadlineDate] = useState<Date | null>(parseDate(deadlineArgument));
   const [location, setLocation] = useState<"inbox" | "dailyNote">("inbox");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(hasQuickArguments);
+  const hasSubmittedRef = useRef(false);
 
-  // If task argument is provided, auto-submit
+  // If task argument is provided, auto-submit immediately
   useEffect(() => {
-    if (taskArgument?.trim()) {
-      handleSubmit();
+    if (hasQuickArguments && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true;
+      handleQuickSubmit();
     }
   }, []);
+
+  const handleQuickSubmit = async () => {
+    const taskContent = taskArgument!.trim();
+
+    try {
+      const taskParams: CreateTaskParams = {
+        markdown: taskContent,
+        location: { type: "inbox" },
+      };
+
+      const parsedSchedule = parseDate(scheduleArgument);
+      const parsedDeadline = parseDate(deadlineArgument);
+
+      if (parsedSchedule || parsedDeadline) {
+        taskParams.taskInfo = {};
+        if (parsedSchedule) {
+          taskParams.taskInfo.scheduleDate = formatLocalDate(parsedSchedule);
+        }
+        if (parsedDeadline) {
+          taskParams.taskInfo.deadlineDate = formatLocalDate(parsedDeadline);
+        }
+      }
+
+      await createTask(taskParams);
+      await showToast({ style: Toast.Style.Success, title: "Task created", message: taskContent });
+      await popToRoot();
+    } catch (error) {
+      showFailureToast(error, { title: "Failed to create task" });
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const taskContent = markdown.trim();
@@ -91,6 +125,11 @@ export default function Command(props: LaunchProps<{ arguments: AddTaskArguments
       setIsSubmitting(false);
     }
   };
+
+  // Show loading form when quick submitting
+  if (hasQuickArguments) {
+    return <Form isLoading={true} />;
+  }
 
   return (
     <Form
