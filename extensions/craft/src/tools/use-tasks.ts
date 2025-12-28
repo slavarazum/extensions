@@ -30,9 +30,9 @@ export default async function (input: Input) {
   const formattedTasks = tasks.map((task) => ({
     id: task.id,
     content: task.markdown,
-    state: task.state,
-    ...(task.scheduleDate && { scheduled: task.scheduleDate }),
-    ...(task.deadlineDate && { deadline: task.deadlineDate }),
+    state: task.taskInfo.state,
+    ...(task.taskInfo.scheduleDate && { scheduled: task.taskInfo.scheduleDate }),
+    ...(task.taskInfo.deadlineDate && { deadline: task.taskInfo.deadlineDate }),
   }));
 
   return {

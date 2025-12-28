@@ -35,10 +35,8 @@ export default async function (input: Input) {
     index: index + 1,
     documentId: item.documentId,
     matchSnippet: item.markdown,
-    ...(item.metadata && {
-      lastModified: item.metadata.lastModifiedAt,
-      created: item.metadata.createdAt,
-    }),
+    ...(item.lastModifiedAt && { lastModified: item.lastModifiedAt }),
+    ...(item.createdAt && { created: item.createdAt }),
   }));
 
   return {
