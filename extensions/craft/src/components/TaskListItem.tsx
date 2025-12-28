@@ -67,6 +67,27 @@ export function TaskListItem({
                     await open(url);
                   }}
                 />
+                <ActionPanel.Submenu
+                  title="Start Focus"
+                  icon={Icon.Center}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "f" }}
+                >
+                  {[
+                    { label: "15 minutes", duration: 900 },
+                    { label: "30 minutes", duration: 1800 },
+                    { label: "45 minutes", duration: 2700 },
+                    { label: "1 hour", duration: 3600 },
+                    { label: "1.5 hours", duration: 5400 },
+                    { label: "2 hours", duration: 7200 },
+                  ].map((option) => (
+                    <Action.OpenInBrowser
+                      key={option.duration}
+                      title={option.label}
+                      icon={Icon.Clock}
+                      url={`raycast://focus/start?goal=${encodeURIComponent(cleanMarkdown(task.markdown))}&duration=${option.duration}`}
+                    />
+                  ))}
+                </ActionPanel.Submenu>
                 {onCancel && (
                   <Action
                     title="Cancel"
