@@ -135,7 +135,7 @@ export default function Command() {
                     icon={Icon.Eye}
                     onAction={() => push(<DailyNoteMarkdownDetail note={{ id: doc.id, date: noteDate, link: doc.clickableLink }} />)}
                   />
-                  {doc.clickableLink && <Action.Open title="Open in Craft" target={doc.clickableLink} icon={Icon.AppWindow} />}
+                  {doc.clickableLink && <Action.Open title="Open in App" target={doc.clickableLink} icon={Icon.AppWindow} />}
                   {doc.clickableLink && <Action.CopyToClipboard title="Copy Deep Link" content={doc.clickableLink} icon={Icon.Link} />}
                   <Action
                     title="Refresh"
@@ -205,7 +205,7 @@ function DailyNoteMarkdownDetail({ note }: DailyNoteDetailProps) {
       markdown={markdown || `*No content in ${getDateLabel(note.date)}'s daily note*`}
       actions={
         <ActionPanel>
-          {note.link && <Action.Open title="Open in Craft" target={note.link} icon={Icon.AppWindow} />}
+          {note.link && <Action.Open title="Open in App" target={note.link} icon={Icon.AppWindow} />}
           {note.link && <Action.CopyToClipboard title="Copy Deep Link" content={note.link} icon={Icon.Link} />}
           <Action
             title="Go Back"

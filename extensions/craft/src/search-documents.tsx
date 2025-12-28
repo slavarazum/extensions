@@ -240,7 +240,7 @@ function SearchResultItem({
         <ActionPanel>
           <ActionPanel.Section>
             {document?.clickableLink && (
-              <Action title="Open in App" icon={Icon.ArrowRight} onAction={handleOpenInApp} />
+              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
             )}
             <Action.Push
               title="Show Preview"
@@ -301,7 +301,7 @@ function RecentDocumentItem({ document, onDelete }: { document: Document; onDele
       actions={
         <ActionPanel>
           <ActionPanel.Section>
-            {document.clickableLink && <Action.OpenInBrowser title="Open in App" url={document.clickableLink} />}
+            {document.clickableLink && <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />}
             <Action.Push
               title="Show Preview"
               icon={Icon.Eye}
@@ -386,7 +386,7 @@ function DocumentPreview({
       navigationTitle={title || "Document Preview"}
       actions={
         <ActionPanel>
-          {clickableLink && <Action.OpenInBrowser title="Open in App" url={clickableLink} />}
+          {clickableLink && <Action.Open title="Open in App" target={clickableLink} icon={Icon.AppWindow} />}
           <Action.CopyToClipboard title="Copy Document ID" content={documentId} />
         </ActionPanel>
       }

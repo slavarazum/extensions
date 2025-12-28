@@ -6,6 +6,8 @@
  * @see https://support.craft.do/hc/en-us/articles/360020168838-Deep-Links
  */
 
+import { getCurrentSpaceId } from "./spaces";
+
 const CRAFT_SCHEME = "craftdocs://";
 
 // =============================================================================
@@ -17,8 +19,6 @@ export interface OpenLinkParams {
   blockId?: string;
   /** Document ID (alternative to blockId) */
   documentId?: string;
-  /** Space ID for context */
-  spaceId?: string;
 }
 
 export interface SearchLinkParams {
@@ -34,17 +34,18 @@ export interface SearchLinkParams {
 
 /**
  * Build a link to open a block/document in Craft
+ * Always uses the current selected space ID from storage.
  *
  * @example
  * ```ts
- * openLink({ blockId: "abc123" })
- * // => "craftdocs://open?blockId=abc123"
+ * await openLink({ blockId: "abc123" })
+ * // => "craftdocs://open?blockId=abc123&spaceId=<currentSpaceId>"
  *
- * openLink({ documentId: "doc456", spaceId: "space789" })
- * // => "craftdocs://open?documentId=doc456&spaceId=space789"
+ * await openLink({ documentId: "doc456" })
+ * // => "craftdocs://open?documentId=doc456&spaceId=<currentSpaceId>"
  * ```
  */
-export function openLink(params: OpenLinkParams): string {
+export async function openLink(params: OpenLinkParams): Promise<string> {
   const searchParams = new URLSearchParams();
 
   if (params.blockId) {
@@ -53,36 +54,39 @@ export function openLink(params: OpenLinkParams): string {
   if (params.documentId) {
     searchParams.set("blockId", params.documentId);
   }
-  if (params.spaceId) {
-    searchParams.set("spaceId", params.spaceId);
-  }
+
+  // Always get space ID from current selected space
+  const spaceId = await getCurrentSpaceId();
+  searchParams.set("spaceId", spaceId);
 
   return `${CRAFT_SCHEME}open?${searchParams.toString()}`;
 }
 
 /**
  * Build a link to open a block directly
+ * Always uses the current selected space ID from storage.
  *
  * @example
  * ```ts
- * blockLink("abc123")
- * // => "craftdocs://open?blockId=abc123"
+ * await blockLink("abc123")
+ * // => "craftdocs://open?blockId=abc123&spaceId=<currentSpaceId>"
  * ```
  */
-export function blockLink(blockId: string): string {
+export async function blockLink(blockId: string): Promise<string> {
   return openLink({ blockId });
 }
 
 /**
  * Build a link to open a document
+ * Always uses the current selected space ID from storage.
  *
  * @example
  * ```ts
- * documentLink("doc123")
- * // => "craftdocs://open?documentId=doc123"
+ * await documentLink("doc123")
+ * // => "craftdocs://open?documentId=doc123&spaceId=<currentSpaceId>"
  * ```
  */
-export function documentLink(documentId: string): string {
+export async function documentLink(documentId: string): Promise<string> {
   return openLink({ documentId });
 }
 

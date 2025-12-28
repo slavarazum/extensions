@@ -218,7 +218,7 @@ function SearchResultItem({
         <ActionPanel>
           <ActionPanel.Section>
             {document?.clickableLink && (
-              <Action title="Open in Craft" icon={Icon.ArrowRight} onAction={handleOpenInApp} />
+              <Action title="Open in App" icon={Icon.AppWindow} onAction={handleOpenInApp} />
             )}
             <Action.Push
               title="Show Preview"
@@ -256,7 +256,7 @@ function DailyNoteItem({ document }: { document: Document }) {
         <ActionPanel>
           <ActionPanel.Section>
             {document.clickableLink && (
-              <Action.Open title="Open in Craft" target={document.clickableLink} />
+              <Action.Open title="Open in App" target={document.clickableLink} icon={Icon.AppWindow} />
             )}
             <Action.Push
               title="Show Preview"
@@ -317,7 +317,7 @@ function DailyNotePreview({
       navigationTitle={title || "Daily Note"}
       actions={
         <ActionPanel>
-          {clickableLink && <Action.Open title="Open in Craft" target={clickableLink} />}
+          {clickableLink && <Action.Open title="Open in App" target={clickableLink} icon={Icon.AppWindow} />}
           <Action.CopyToClipboard title="Copy Document ID" content={documentId} />
         </ActionPanel>
       }
