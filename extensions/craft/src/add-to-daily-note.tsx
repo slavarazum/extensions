@@ -1,6 +1,6 @@
-import { Form, ActionPanel, Action, showToast, Toast, popToRoot, Icon } from "@raycast/api";
+import { Form, ActionPanel, Action, showToast, Toast, popToRoot, Icon, open } from "@raycast/api";
 import { showFailureToast } from "@raycast/utils";
-import { useDailyNote, type Block } from "./api";
+import { useDailyNote, openLink, type Block } from "./api";
 
 interface FormValues {
   content: string;
@@ -10,7 +10,7 @@ interface FormValues {
 export default function Command() {
   const { addContent } = useDailyNote();
 
-  async function handleSubmit(values: FormValues) {
+  async function handleSubmit(values: FormValues, openAfterAdd: boolean) {
     if (!values.content.trim()) {
       await showToast({ style: Toast.Style.Failure, title: "Content is required" });
       return;
@@ -19,10 +19,24 @@ export default function Command() {
     const toast = await showToast({ style: Toast.Style.Animated, title: "Adding to daily note..." });
 
     try {
-      await addContent(values.content, values.listStyle || "none");
+      const blocks = await addContent(values.content, values.listStyle || "none");
+      const blockId = blocks[0]?.id;
+      const link = blockId ? await openLink({ blockId }) : undefined;
 
-      toast.style = Toast.Style.Success;
-      toast.title = "Added to daily note";
+      if (openAfterAdd && link) {
+        await open(link);
+        toast.style = Toast.Style.Success;
+        toast.title = "Added to daily note and opened";
+      } else {
+        toast.style = Toast.Style.Success;
+        toast.title = "Added to daily note";
+        if (link) {
+          toast.primaryAction = {
+            title: "Open in App",
+            onAction: () => open(link),
+          };
+        }
+      }
       await popToRoot();
     } catch (error) {
       await showFailureToast(error, { title: "Failed to add to daily note" });
@@ -33,7 +47,15 @@ export default function Command() {
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Add to Daily Note" onSubmit={handleSubmit} />
+          <Action.SubmitForm<FormValues>
+            title="Add to Daily Note"
+            onSubmit={(values) => handleSubmit(values, false)}
+          />
+          <Action.SubmitForm<FormValues>
+            title="Add and Open in App"
+            icon={Icon.AppWindowSidebarRight}
+            onSubmit={(values) => handleSubmit(values, true)}
+          />
         </ActionPanel>
       }
     >
