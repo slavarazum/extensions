@@ -58,19 +58,27 @@ const STORAGE_KEYS = {
  * Uses a workaround: calling /blocks with date=tomorrow returns a 404 error
  * that includes the spaceId in the error details.
  */
-async function fetchSpaceIdFromApi(documentsApiUrl: string): Promise<string> {
+async function fetchSpaceIdFromApi(documentsApiUrl: string, apiKey?: string): Promise<string> {
   const url = `${documentsApiUrl}/blocks?date=2034-03-10&maxDepth=0`;
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (apiKey) {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
 
   const response = await globalThis.fetch(url, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
   });
+
+  const responseData = await response.json();
 
   // We expect a 404 error with spaceId in the response
   if (response.status === 404) {
-    const errorData = (await response.json()) as CraftApiErrorResponse;
+    const errorData = responseData as CraftApiErrorResponse;
     if (errorData.details?.spaceId) {
       return errorData.details.spaceId;
     }
@@ -96,7 +104,7 @@ async function fetchSpaceIdFromApi(documentsApiUrl: string): Promise<string> {
  * Get or fetch the default space ID.
  * Fetches from API on first call and caches in LocalStorage.
  */
-async function getOrFetchDefaultSpaceId(documentsApiUrl: string): Promise<string> {
+async function getOrFetchDefaultSpaceId(documentsApiUrl: string, apiKey?: string): Promise<string> {
   // Check if we already have the default space ID cached
   const cachedId = await LocalStorage.getItem<string>(STORAGE_KEYS.defaultSpaceId);
   if (cachedId) {
@@ -104,7 +112,7 @@ async function getOrFetchDefaultSpaceId(documentsApiUrl: string): Promise<string
   }
 
   // Fetch from API and cache
-  const spaceId = await fetchSpaceIdFromApi(documentsApiUrl);
+  const spaceId = await fetchSpaceIdFromApi(documentsApiUrl, apiKey);
   await LocalStorage.setItem(STORAGE_KEYS.defaultSpaceId, spaceId);
   return spaceId;
 }
@@ -124,7 +132,7 @@ export async function getDefaultSpace(): Promise<Space | null> {
     return null;
   }
 
-  const spaceId = await getOrFetchDefaultSpaceId(preferences.documentsApiUrl);
+  const spaceId = await getOrFetchDefaultSpaceId(preferences.documentsApiUrl, preferences.documentsApiKey);
 
   return {
     id: spaceId,
@@ -182,7 +190,7 @@ export async function addSpace(space: Omit<Space, "id">): Promise<Space> {
   const spaces = await getAdditionalSpaces();
 
   // Fetch the real spaceId from Craft API
-  const spaceId = await fetchSpaceIdFromApi(space.documentsApiUrl);
+  const spaceId = await fetchSpaceIdFromApi(space.documentsApiUrl, space.documentsApiKey);
 
   const newSpace: Space = {
     ...space,
