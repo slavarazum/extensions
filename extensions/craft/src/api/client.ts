@@ -66,9 +66,9 @@ export async function buildUrl(endpoint: string, params?: QueryParams): Promise<
 }
 
 /**
- * Build a full API URL with query parameters using Daily Notes API.
+ * Build a full API URL with query parameters using Daily Notes & Tasks API.
  */
-export async function buildDailyNotesUrl(endpoint: string, params?: QueryParams): Promise<string> {
+export async function buildDailyNotesAndTasksUrl(endpoint: string, params?: QueryParams): Promise<string> {
   const baseUrl = await getDailyNotesAndTasksApiUrl();
   return buildUrlWithBase(baseUrl, endpoint, params);
 }
@@ -163,9 +163,9 @@ export async function fetchDocumentsApi<T>(url: string, options?: RequestInit): 
 }
 
 /**
- * Make a fetch request to the Daily Notes API with automatic API key.
+ * Make a fetch request to the Daily Notes & Tasks API with automatic API key.
  */
-export async function fetchDailyNotesApi<T>(url: string, options?: RequestInit): Promise<T> {
+export async function fetchDailyNotesAndTasksApi<T>(url: string, options?: RequestInit): Promise<T> {
   const apiKey = await getDailyNotesAndTasksApiKey();
   return fetch<T>(url, { ...options, apiKey });
 }

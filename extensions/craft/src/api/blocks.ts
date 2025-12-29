@@ -11,9 +11,9 @@ import { useFetch } from "@raycast/utils";
 import {
   buildUrlWithBaseUrl,
   buildUrl,
-  buildDailyNotesUrl,
+  buildDailyNotesAndTasksUrl,
   fetchDocumentsApi,
-  fetchDailyNotesApi,
+  fetchDailyNotesAndTasksApi,
   formatLocalDate,
   ItemsResponse,
   IdsResponse,
@@ -298,9 +298,9 @@ export async function fetchBlocks(params: GetBlocksParams): Promise<Block[]> {
   // Use Daily Notes API if fetching by date, otherwise use Documents API
   const isDailyNote = !!params.date;
   const url = isDailyNote
-    ? await buildDailyNotesUrl(ENDPOINTS.blocks, { ...params })
+    ? await buildDailyNotesAndTasksUrl(ENDPOINTS.blocks, { ...params })
     : await buildUrl(ENDPOINTS.blocks, { ...params });
-  const data = isDailyNote ? await fetchDailyNotesApi<Block>(url) : await fetchDocumentsApi<Block>(url);
+  const data = isDailyNote ? await fetchDailyNotesAndTasksApi<Block>(url) : await fetchDocumentsApi<Block>(url);
   return data.content ?? [data];
 }
 
@@ -320,9 +320,9 @@ export async function insertBlock(params: InsertBlockParams): Promise<Block[]> {
   // Use Daily Notes API for date-based positions, otherwise use Documents API
   // Both use the /blocks endpoint with the same payload structure
   const isDailyNote = "date" in params.position;
-  const url = isDailyNote ? await buildDailyNotesUrl(ENDPOINTS.blocks) : await buildUrl(ENDPOINTS.blocks);
+  const url = isDailyNote ? await buildDailyNotesAndTasksUrl(ENDPOINTS.blocks) : await buildUrl(ENDPOINTS.blocks);
 
-  const fetchFn = isDailyNote ? fetchDailyNotesApi : fetchDocumentsApi;
+  const fetchFn = isDailyNote ? fetchDailyNotesAndTasksApi : fetchDocumentsApi;
   const data = await fetchFn<ItemsResponse<Block>>(url, {
     method: "POST",
     body: JSON.stringify({
@@ -340,9 +340,9 @@ export async function insertBlocks(blocks: Partial<Block>[], position: BlockPosi
   // Use Daily Notes API for date-based positions, otherwise use Documents API
   // Both use the /blocks endpoint with the same payload structure
   const isDailyNote = "date" in position;
-  const url = isDailyNote ? await buildDailyNotesUrl(ENDPOINTS.blocks) : await buildUrl(ENDPOINTS.blocks);
+  const url = isDailyNote ? await buildDailyNotesAndTasksUrl(ENDPOINTS.blocks) : await buildUrl(ENDPOINTS.blocks);
 
-  const fetchFn = isDailyNote ? fetchDailyNotesApi : fetchDocumentsApi;
+  const fetchFn = isDailyNote ? fetchDailyNotesAndTasksApi : fetchDocumentsApi;
   const data = await fetchFn<ItemsResponse<Block>>(url, {
     method: "POST",
     body: JSON.stringify({ blocks, position }),

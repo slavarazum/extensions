@@ -9,7 +9,13 @@
 
 import { Toast, showToast } from "@raycast/api";
 import { useFetch, showFailureToast } from "@raycast/utils";
-import { buildUrlWithBaseUrl, buildUrl, fetchDocumentsApi, ItemsResponse, IdsResponse } from "./client";
+import {
+  buildUrlWithBaseUrl,
+  buildDailyNotesAndTasksUrl,
+  fetchDailyNotesAndTasksApi,
+  ItemsResponse,
+  IdsResponse,
+} from "./client";
 import { useCurrentSpace } from "./spaces";
 
 // =============================================================================
@@ -99,11 +105,11 @@ export interface UseTasksResult {
  * ```
  */
 export function useTasks(params?: TasksParams): UseTasksResult {
-  const { documentsApiUrl, documentsHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
+  const { dailyNotesAndTasksApiUrl, dailyNotesAndTasksHeaders, isLoading: isLoadingSpace } = useCurrentSpace();
 
   const { data, isLoading, error, revalidate } = useFetch<ItemsResponse<Task>>(
-    buildUrlWithBaseUrl(documentsApiUrl, "/tasks", { ...params }),
-    { keepPreviousData: true, execute: !!documentsApiUrl, headers: documentsHeaders },
+    buildUrlWithBaseUrl(dailyNotesAndTasksApiUrl, "/tasks", { ...params }),
+    { keepPreviousData: true, execute: !!dailyNotesAndTasksApiUrl, headers: dailyNotesAndTasksHeaders },
   );
 
   return {
@@ -224,8 +230,8 @@ export function useTaskHandlers(revalidate: () => void): TaskHandlers {
  * Fetch tasks (for tools/non-React code)
  */
 export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
-  const url = await buildUrl("/tasks", { ...params });
-  const data = await fetchDocumentsApi<ItemsResponse<Task>>(url);
+  const url = await buildDailyNotesAndTasksUrl("/tasks", { ...params });
+  const data = await fetchDailyNotesAndTasksApi<ItemsResponse<Task>>(url);
   return [...data.items].reverse();
 }
 
@@ -233,8 +239,8 @@ export async function fetchTasks(params?: TasksParams): Promise<Task[]> {
  * Create a new task
  */
 export async function createTask(task: CreateTaskParams): Promise<Task> {
-  const url = await buildUrl("/tasks");
-  const data = await fetchDocumentsApi<ItemsResponse<Task>>(url, {
+  const url = await buildDailyNotesAndTasksUrl("/tasks");
+  const data = await fetchDailyNotesAndTasksApi<ItemsResponse<Task>>(url, {
     method: "POST",
     body: JSON.stringify({ tasks: [task] }),
   });
@@ -245,8 +251,8 @@ export async function createTask(task: CreateTaskParams): Promise<Task> {
  * Update a task's state or dates
  */
 export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promise<void> {
-  const url = await buildUrl("/tasks");
-  await fetchDocumentsApi<ItemsResponse<Task>>(url, {
+  const url = await buildDailyNotesAndTasksUrl("/tasks");
+  await fetchDailyNotesAndTasksApi<ItemsResponse<Task>>(url, {
     method: "PUT",
     body: JSON.stringify({ tasksToUpdate: [{ id: taskId, taskInfo: updates }] }),
   });
@@ -256,8 +262,8 @@ export async function updateTask(taskId: string, updates: TaskUpdateInfo): Promi
  * Delete a task
  */
 export async function deleteTask(taskId: string): Promise<void> {
-  const url = await buildUrl("/tasks");
-  await fetchDocumentsApi<IdsResponse>(url, {
+  const url = await buildDailyNotesAndTasksUrl("/tasks");
+  await fetchDailyNotesAndTasksApi<IdsResponse>(url, {
     method: "DELETE",
     body: JSON.stringify({ idsToDelete: [taskId] }),
   });

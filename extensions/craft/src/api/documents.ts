@@ -11,9 +11,9 @@ import { useFetch } from "@raycast/utils";
 import {
   buildUrlWithBaseUrl,
   buildUrl,
-  buildDailyNotesUrl,
+  buildDailyNotesAndTasksUrl,
   fetchDocumentsApi,
-  fetchDailyNotesApi,
+  fetchDailyNotesAndTasksApi,
   ItemsResponse,
   QueryParams,
 } from "./client";
@@ -283,8 +283,8 @@ export async function searchDailyNotes(params: SearchDailyNotesParams): Promise<
     fetchMetadata: params.fetchMetadata,
     include: typeof params.include === "string" ? params.include : undefined,
   };
-  const url = await buildDailyNotesUrl("/daily-notes/search", searchParams);
-  const data = await fetchDailyNotesApi<ItemsResponse<DailyNoteSearchMatch>>(url);
+  const url = await buildDailyNotesAndTasksUrl("/daily-notes/search", searchParams);
+  const data = await fetchDailyNotesAndTasksApi<ItemsResponse<DailyNoteSearchMatch>>(url);
   return data.items;
 }
 

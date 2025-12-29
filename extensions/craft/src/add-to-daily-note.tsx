@@ -47,10 +47,7 @@ export default function Command() {
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm<FormValues>
-            title="Add to Daily Note"
-            onSubmit={(values) => handleSubmit(values, false)}
-          />
+          <Action.SubmitForm<FormValues> title="Add to Daily Note" onSubmit={(values) => handleSubmit(values, false)} />
           <Action.SubmitForm<FormValues>
             title="Add and Open in App"
             icon={Icon.AppWindowSidebarRight}
